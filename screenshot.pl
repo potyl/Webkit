@@ -13,14 +13,17 @@ sub main {
     die "Usage: url file\n" unless @ARGV == 2;
     my ($url, $file) = @ARGV;
 
-    my $view = Gtk2::WebKit::WebView->new;
+    my $window = Gtk2::Window->new('toplevel');
+    my $screen = $window->get_screen;
 
+    $window->set_default_size(800, 600);
+    $window->signal_connect(destroy => sub { Gtk2->main_quit() });
+    $window->set_decorated(FALSE);
+
+
+    my $view = Gtk2::WebKit::WebView->new;
     my $sw = Gtk2::ScrolledWindow->new;
     $sw->add($view);
-
-    my $win = Gtk2::Window->new();
-    $win->set_default_size(800, 600);
-    $win->signal_connect(destroy => sub { Gtk2->main_quit });
 
     my $button = Gtk2::Button->new("Capture");
     $button->signal_connect(clicked => \&save_as_png, [$view, $file]);
@@ -34,8 +37,8 @@ sub main {
     $box->pack_start($sw, TRUE, TRUE, 2);
 
 
-    $win->add($box);
-    $win->show_all();
+    $window->add($box);
+    $window->show_all();
 
     $view->open($url);
 
