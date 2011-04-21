@@ -15,6 +15,12 @@ sub main {
 
     my $window = Gtk2::Window->new('toplevel');
     my $screen = $window->get_screen;
+    my $rgba = $screen->get_rgba_colormap;
+    if ($rgba && $screen->is_composited) {
+        print "Setting composited\n";
+        Gtk2::Widget->set_default_colormap($rgba);
+        $window->set_colormap($rgba);
+    }
 
     $window->set_default_size(800, 600);
     $window->signal_connect(destroy => sub { Gtk2->main_quit() });
