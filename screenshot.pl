@@ -30,6 +30,7 @@ sub main {
     my $view = Gtk2::WebKit::WebView->new;
     my $sw = Gtk2::ScrolledWindow->new;
     $sw->add($view);
+    $view->set_transparent(TRUE);
 
     my $button = Gtk2::Button->new("Capture");
     $button->signal_connect(clicked => \&save_as_png, [$view, $file]);
