@@ -8,39 +8,46 @@ use Gtk2 -init;
 use Gtk2::WebKit;
 use Data::Dumper;
 
-die "Usage: url file\n" unless @ARGV == 2;
-my ($url, $file) = @ARGV;
 
-my $view = Gtk2::WebKit::WebView->new;
+sub main {
+    die "Usage: url file\n" unless @ARGV == 2;
+    my ($url, $file) = @ARGV;
 
-my $sw = Gtk2::ScrolledWindow->new;
-$sw->add($view);
+    my $view = Gtk2::WebKit::WebView->new;
 
-my $win = Gtk2::Window->new;
-$win->set_default_size(800, 600);
-$win->signal_connect(destroy => sub { Gtk2->main_quit });
+    my $sw = Gtk2::ScrolledWindow->new;
+    $sw->add($view);
 
-my $button = Gtk2::Button->new("Capture");
-$button->signal_connect(clicked => \&save_as_png);
+    my $win = Gtk2::Window->new();
+    $win->set_default_size(800, 600);
+    $win->signal_connect(destroy => sub { Gtk2->main_quit });
 
-# Take a screenshot once all is loaded
-$view->signal_connect("load-finished" => \&save_as_png);
+    my $button = Gtk2::Button->new("Capture");
+    $button->signal_connect(clicked => \&save_as_png, [$view, $file]);
 
-
-my $box = Gtk2::VBox->new(0, 0);
-$box->pack_start($button, FALSE, FALSE, 2);
-$box->pack_start($sw, TRUE, TRUE, 2);
+    # Take a screenshot once all is loaded
+    $view->signal_connect("load-finished" => \&save_as_png, [$view, $file]);
 
 
-$win->add($box);
-$win->show_all;
+    my $box = Gtk2::VBox->new(0, 0);
+    $box->pack_start($button, FALSE, FALSE, 2);
+    $box->pack_start($sw, TRUE, TRUE, 2);
 
-$view->open( $url );
 
-Gtk2->main;
+    $win->add($box);
+    $win->show_all();
+
+    $view->open($url);
+
+    Gtk2->main;
+    return 0;
+}
 
 
 sub save_as_png {
+    my $data = pop;
+    my ($view, $file) = @{ $data };
+
     my $pixmap = $view->get_snapshot();
     if (! $pixmap) {
         warn "Can't get a snapshot from webkit";
@@ -57,7 +64,7 @@ sub save_as_png {
     }
     $pixbuf->save($file, 'png');
 
-  
+
     my $status = $view->get_load_status;
     if ($status ne 'finished') {
         print "Warn: page not finished loading! (status: $status)\n";
@@ -65,6 +72,9 @@ sub save_as_png {
     else {
         print "Page finished loading\n";
     }
-    
-    Gtk2->main_quit;
+
+    Gtk2->main_quit();
 }
+
+
+exit main() unless caller;
