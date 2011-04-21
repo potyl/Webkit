@@ -24,21 +24,22 @@ sub main {
 
     $window->set_default_size(800, 600);
     $window->signal_connect(destroy => sub { Gtk2->main_quit() });
-    $window->set_decorated(FALSE);
+    #$window->set_decorated(FALSE);
 
 
-    my $view = Gtk2::WebKit::WebView->new;
-    my $sw = Gtk2::ScrolledWindow->new;
-    $sw->add($view);
+    my $view = Gtk2::WebKit::WebView->new();
     $view->set_transparent(TRUE);
 
     my $button = Gtk2::Button->new("Capture");
-    $button->signal_connect(clicked => \&save_as_png, [$view, $file]);
 
     # Take a screenshot once all is loaded
     $view->signal_connect("load-finished" => \&save_as_png, [$view, $file]);
+    $button->signal_connect(clicked => \&save_as_png, [$view, $file]);
 
 
+    # Pack the widgets together
+    my $sw = Gtk2::ScrolledWindow->new();
+    $sw->add($view);
     my $box = Gtk2::VBox->new(0, 0);
     $box->pack_start($button, FALSE, FALSE, 2);
     $box->pack_start($sw, TRUE, TRUE, 2);
