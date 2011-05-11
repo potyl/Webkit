@@ -6,7 +6,13 @@ screenshot.pl - Take a screenshot of a page
 
 =head1 SYNOPSIS
 
-screenshot.pl http://www.google.com/ pic.png
+Simple usage:
+
+    screenshot.pl http://www.google.com/ pic.png
+
+Or without showing a window
+
+    xvfb-run --server-args="-screen 0 1024x768x24" screenshot.pl http://www.google.com/ pic.png
 
 =head1 DESCRIPTION
 
@@ -35,21 +41,10 @@ sub main {
     my $button = Gtk2::Button->new("Capture");
 
     # Take a screenshot once all is loaded
-    $view->signal_connect('notify::load-status' => \&load_status_cb, [$view, $file]);
-
-    # Let the user click on a button to take a screenshot
-    $button->signal_connect(clicked => \&save_as_png, [$view, $file]);
+    $view->signal_connect('notify::load-status' => \&load_status_cb, $file);
 
 
-    # Pack the widgets together
-    my $sw = Gtk2::ScrolledWindow->new();
-    $sw->add($view);
-    my $box = Gtk2::VBox->new(0, 0);
-    $box->pack_start($button, FALSE, FALSE, 2);
-    $box->pack_start($sw, TRUE, TRUE, 2);
-
-
-    $window->add($box);
+    $window->add($view);
     $window->show_all();
 
     $view->open($url);
@@ -60,15 +55,9 @@ sub main {
 
 
 sub load_status_cb {
-    my ($view, undef, $data) = @_;
+    my ($view, undef, $file) = @_;
     my $uri = $view->get_uri or return;
-    save_as_png($view, $data) if $view->get_load_status eq 'finished';
-}
-
-
-sub save_as_png {
-    my $data = pop;
-    my ($view, $file) = @{ $data };
+    return unless $view->get_load_status eq 'finished';
 
     my $pixmap = $view->get_snapshot();
     if (! $pixmap) {
@@ -86,15 +75,6 @@ sub save_as_png {
     }
     $pixbuf->save($file, 'png');
     print "Screenshot saved as $file\n";
-
-
-    my $status = $view->get_load_status;
-    if ($status ne 'finished') {
-        print "Warn: page not finished loading! (status: $status)\n";
-    }
-    else {
-        print "Page finished loading\n";
-    }
 
     Gtk2->main_quit();
 }
