@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
 
 
   // Create a WebView, set it transparent, add it to the window
-  WebKitWebView* web_view = web_view = WEBKIT_WEB_VIEW(webkit_web_view_new());
+  WebKitWebView* web_view = WEBKIT_WEB_VIEW(webkit_web_view_new());
   webkit_web_view_set_transparent(web_view, TRUE);
   gtk_container_add (GTK_CONTAINER(window), GTK_WIDGET(web_view));
 
