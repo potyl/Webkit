@@ -1,4 +1,5 @@
 Small WebKit hacks.
 
+webkit.pl      - display a web page
 transparent.pl - load a page in a transparent window
-screenshot.pl - take a screenshot of a page
+screenshot.pl  - take a screenshot of a page
