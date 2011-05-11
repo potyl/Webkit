@@ -1,5 +1,19 @@
 #!/usr/bin/env perl
 
+=head1 NAME
+
+screenshot.pl - Take a screenshot of a page
+
+=head1 SYNOPSIS
+
+screenshot.pl http://www.google.com/ pic.png
+
+=head1 DESCRIPTION
+
+Loads an URI and takes a screeshot once the page is rendered.
+
+=cut
+
 use strict;
 use warnings;
 
@@ -14,26 +28,16 @@ sub main {
     my ($url, $file) = @ARGV;
 
     my $window = Gtk2::Window->new('toplevel');
-    my $screen = $window->get_screen;
-    my $rgba = $screen->get_rgba_colormap;
-    if ($rgba && $screen->is_composited) {
-        print "Setting composited\n";
-        Gtk2::Widget->set_default_colormap($rgba);
-        $window->set_colormap($rgba);
-    }
-
     $window->set_default_size(800, 600);
     $window->signal_connect(destroy => sub { Gtk2->main_quit() });
-    #$window->set_decorated(FALSE);
-
 
     my $view = Gtk2::WebKit::WebView->new();
-    $view->set_transparent(TRUE);
-
     my $button = Gtk2::Button->new("Capture");
 
     # Take a screenshot once all is loaded
-    $view->signal_connect("load-finished" => \&save_as_png, [$view, $file]);
+    $view->signal_connect('notify::load-status' => \&load_status_cb, [$view, $file]);
+
+    # Let the user click on a button to take a screenshot
     $button->signal_connect(clicked => \&save_as_png, [$view, $file]);
 
 
@@ -50,8 +54,15 @@ sub main {
 
     $view->open($url);
 
-    Gtk2->main;
+    Gtk2->main();
     return 0;
+}
+
+
+sub load_status_cb {
+    my ($view, undef, $data) = @_;
+    my $uri = $view->get_uri or return;
+    save_as_png($view, $data) if $view->get_load_status eq 'finished';
 }
 
 
@@ -74,6 +85,7 @@ sub save_as_png {
         return;
     }
     $pixbuf->save($file, 'png');
+    print "Screenshot saved as $file\n";
 
 
     my $status = $view->get_load_status;
