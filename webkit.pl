@@ -44,7 +44,7 @@ sub main {
     $window->add($scrolls);
     $window->show_all();
 
-    $view->open($url);
+    $view->load_uri($url);
 
     Gtk2->main;
     return 0;

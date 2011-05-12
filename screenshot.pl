@@ -47,7 +47,7 @@ sub main {
     $window->add($view);
     $window->show_all();
 
-    $view->open($url);
+    $view->load_uri($url);
 
     Gtk2->main();
     return 0;
