@@ -21,11 +21,6 @@ static void resource_change_cb(GObject* object, GParamSpec* pspec, gpointer data
 }
 
 
-static void load_status_cb(GObject* object, GParamSpec* pspec, gpointer data) {
-    printf("**** load status called\n");
-}
-
-
 static void tracker_start_cb (WebKitWebView *web_view, WebKitWebFrame *web_frame, WebKitWebResource *web_resource, WebKitNetworkRequest *request, WebKitNetworkResponse *response, gpointer user_data) {
     SoupMessage *message;
     const char *uri;
@@ -63,36 +58,48 @@ static void tracker_end_cb(SoupMessage *message, gpointer data) {
 }
 
 
+static void load_status_cb(GObject* object, GParamSpec* pspec, gpointer data) {
+    WebKitWebView *web_view;
+    WebKitLoadStatus status;
+    GMainLoop* loop;
+
+    loop = (GMainLoop *) data;
+
+    web_view = WEBKIT_WEB_VIEW(object);
+    status = webkit_web_view_get_load_status(web_view);
+    if (status == WEBKIT_LOAD_FINISHED) {
+        g_main_loop_quit(loop);
+        printf("Finished with %s\n", webkit_web_view_get_uri(web_view));
+    }
+}
+
 int main(int argc, char* argv[]) {
-  const char *uri;
-  GtkWidget* window;
-  WebKitWebView* web_view;
+    const char *uri;
+    WebKitWebView* web_view;
+    GMainLoop* loop;
 
-  gtk_init(&argc, &argv);
+    gtk_init(&argc, &argv);
   
-  if (argc == 1) {
-  	printf("Usage: URI\n");
-  	return 1;
-  }
-  uri = argv[1];
+    if (argc == 1) {
+        printf("Usage: URI\n");
+        return 1;
+    }
+    uri = argv[1];
 
-  if (!g_thread_supported()) {g_thread_init(NULL);}
+    if (!g_thread_supported()) {g_thread_init(NULL);}
 
-  window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_window_set_default_size(GTK_WINDOW(window), 600, 400);
-  g_signal_connect(window, "destroy", G_CALLBACK(destroy_cb), NULL);
+    loop = g_main_loop_new(NULL, TRUE);
 
-  web_view = WEBKIT_WEB_VIEW(webkit_web_view_new());
+    web_view = WEBKIT_WEB_VIEW(webkit_web_view_new());
+    g_object_ref_sink(G_OBJECT(web_view));
 
-  g_signal_connect(web_view, "resource-request-starting", G_CALLBACK(tracker_start_cb), NULL);
-//    g_object_connect(web_view, "signal::notify::load-status", &load_status_cb, NULL, NULL);
+    g_signal_connect(web_view, "resource-request-starting", G_CALLBACK(tracker_start_cb), NULL);
+    g_signal_connect(web_view, "notify::load-status", G_CALLBACK(load_status_cb), loop);
+    webkit_web_view_load_uri(web_view, uri);
 
-  webkit_web_view_load_uri(web_view, uri);
+    g_main_loop_run(loop);
 
-  gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(web_view));
-  gtk_widget_grab_focus(GTK_WIDGET(web_view));
-  gtk_widget_show_all(window);
-  gtk_main();
-  return 0;
+    g_object_unref(web_view);
+    return 0;
 }
 
