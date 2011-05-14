@@ -35,7 +35,6 @@ static void tracker_start_cb (WebKitWebView *web_view, WebKitWebFrame *web_frame
         printf("Can't get message for %s\n", uri);
         return;
     }
-    printf("Message is %p\n", message);
     g_object_get(
         message,
         "status-code", &code,
@@ -44,7 +43,7 @@ static void tracker_start_cb (WebKitWebView *web_view, WebKitWebFrame *web_frame
     );
     printf("Download of %s code: %d; method: %s\n", uri, code, method);
     
-    g_signal_connect(message, "notify::encoding", G_CALLBACK(resource_change_cb), request);
+    g_signal_connect(message, "notify::uri", G_CALLBACK(resource_change_cb), request);
     g_signal_connect(message, "notify::satus-code", G_CALLBACK(resource_change_cb), request);
     g_signal_connect(message, "finished", G_CALLBACK(tracker_end_cb), request);
     g_signal_connect(web_resource, "notify::encoding", G_CALLBACK(resource_change_cb), NULL);
