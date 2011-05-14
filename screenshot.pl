@@ -38,7 +38,6 @@ sub main {
     $window->signal_connect(destroy => sub { Gtk2->main_quit() });
 
     my $view = Gtk2::WebKit::WebView->new();
-    my $button = Gtk2::Button->new("Capture");
 
     # Take a screenshot once all is loaded
     $view->signal_connect('notify::load-status' => \&load_status_cb, $file);
