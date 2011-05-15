@@ -2,30 +2,21 @@
 #include <webkit/webkit.h>
 #include <libsoup/soup.h>
 
-static void destroy_cb(GtkWidget *widget, gpointer data);
-static void tracker_start_cb (WebKitWebView *webView, WebKitWebFrame *web_frame, WebKitWebResource *web_resource, WebKitNetworkRequest *request, WebKitNetworkResponse *response, gpointer user_data);
-static void tracker_end_cb(SoupMessage *messag, gpointer data);
+
+static void
+tracker_start_cb (WebKitWebView *web_view, WebKitWebFrame *web_frame, WebKitWebResource *web_resource, WebKitNetworkRequest *request, WebKitNetworkResponse *response, gpointer user_data);
+
+static void
+tracker_end_cb (SoupMessage *message, gpointer data);
+
+static void
+load_status_cb (GObject* object, GParamSpec* pspec, gpointer data);
 
 
-
-static void destroy_cb(GtkWidget *widget, gpointer data) {
-  gtk_main_quit();
-}
-
-static void resource_change_cb(GObject* object, GParamSpec* pspec, gpointer data) {
-    WebKitWebResource *web_resource;
-    
-    web_resource = (WebKitWebResource *) object;
-    
-    printf("**** %s\n", webkit_web_resource_get_uri(web_resource));
-}
-
-
-static void tracker_start_cb (WebKitWebView *web_view, WebKitWebFrame *web_frame, WebKitWebResource *web_resource, WebKitNetworkRequest *request, WebKitNetworkResponse *response, gpointer user_data) {
+static void
+tracker_start_cb (WebKitWebView *web_view, WebKitWebFrame *web_frame, WebKitWebResource *web_resource, WebKitNetworkRequest *request, WebKitNetworkResponse *response, gpointer user_data) {
     SoupMessage *message;
     const char *uri;
-    int code;
-    char *method;
     
     uri = webkit_network_request_get_uri(request);
     if (strcmp(uri, "about:blank") == 0) {return;}
@@ -35,29 +26,21 @@ static void tracker_start_cb (WebKitWebView *web_view, WebKitWebFrame *web_frame
         printf("Can't get message for %s\n", uri);
         return;
     }
-    g_object_get(
-        message,
-        "status-code", &code,
-        "method", &method,
-        NULL
-    );
-    printf("Download of %s code: %d; method: %s\n", uri, code, method);
-    
-    g_signal_connect(message, "notify::uri", G_CALLBACK(resource_change_cb), request);
-    g_signal_connect(message, "notify::satus-code", G_CALLBACK(resource_change_cb), request);
+    printf("Start download of %s\n", uri);
     g_signal_connect(message, "finished", G_CALLBACK(tracker_end_cb), request);
-    g_signal_connect(web_resource, "notify::encoding", G_CALLBACK(resource_change_cb), NULL);
 }
 
 
-static void tracker_end_cb(SoupMessage *message, gpointer data) {
+static void
+tracker_end_cb (SoupMessage *message, gpointer data) {
     WebKitNetworkRequest *request;
     request = (WebKitNetworkRequest *) data;
-    printf("Downloaded %s\n", webkit_network_request_get_uri(request));
+    printf("Finished download of %s\n", webkit_network_request_get_uri(request));
 }
 
 
-static void load_status_cb(GObject* object, GParamSpec* pspec, gpointer data) {
+static void
+load_status_cb (GObject* object, GParamSpec* pspec, gpointer data) {
     WebKitWebView *web_view;
     WebKitLoadStatus status;
     GMainLoop* loop;
@@ -67,12 +50,14 @@ static void load_status_cb(GObject* object, GParamSpec* pspec, gpointer data) {
     web_view = WEBKIT_WEB_VIEW(object);
     status = webkit_web_view_get_load_status(web_view);
     if (status == WEBKIT_LOAD_FINISHED) {
-        g_main_loop_quit(loop);
         printf("Finished with %s\n", webkit_web_view_get_uri(web_view));
+        g_main_loop_quit(loop);
     }
 }
 
-int main(int argc, char* argv[]) {
+
+int
+main (int argc, char* argv[]) {
     const char *uri;
     WebKitWebView* web_view;
     GMainLoop* loop;
@@ -99,6 +84,7 @@ int main(int argc, char* argv[]) {
     g_main_loop_run(loop);
 
     g_object_unref(web_view);
+
     return 0;
 }
 
