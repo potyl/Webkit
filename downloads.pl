@@ -88,7 +88,24 @@ sub load_status_cb {
     my $uri = $view->get_uri or return;
     return unless $view->get_load_status eq 'finished';
 
-    print "Downlodaded $TOTAL resources\n";
+    my $frame = $view->get_main_frame;
+    my $data_source = $frame->get_data_source;
+    return if $data_source->is_loading;
+
+    my $total = 0;
+    my $size = 0;
+    my $main_resource = $data_source->get_main_resource;
+    $size = length($main_resource->get_data // '');
+    $total += $size;
+    printf "%s %d bytes; %s\n", $main_resource->get_uri, $size, $main_resource->get_mime_type // '';
+
+    foreach my $sub_resource ($data_source->get_subresources) {
+        $size = length($sub_resource->get_data // '');
+        $total += $size;
+        printf "%s %d bytes; %s\n", $sub_resource->get_uri, $size, $sub_resource->get_mime_type // '';
+    }
+
+    print "Downlodaded $TOTAL resources with $total bytes\n";
     Gtk2->main_quit();
 }
 
