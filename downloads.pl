@@ -35,7 +35,7 @@ sub main {
     $window->set_default_size(800, 600);
     $window->signal_connect(destroy => sub { Gtk2->main_quit() });
 
-	my $session = Gtk2::WebKit::WebView->webkit_get_default_session();
+	my $session = Gtk2::WebKit->get_default_session();
     $session->signal_connect('request-started' => \&tracker_cb);
 
     my $view = Gtk2::WebKit::WebView->new();
