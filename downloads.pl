@@ -31,24 +31,20 @@ sub main {
     die "Usage: url\n" unless @ARGV;
     my ($url) = @ARGV;
 
-    my $window = Gtk2::Window->new('toplevel');
-    $window->set_default_size(800, 600);
-    $window->signal_connect(destroy => sub { Gtk2->main_quit() });
+	my $loop = Glib::MainLoop->new();
 
+    # Track all downloads
 	my $session = Gtk2::WebKit->get_default_session();
     $session->signal_connect('request-started' => \&tracker_cb);
 
     my $view = Gtk2::WebKit::WebView->new();
 
-    # Track all downloads
-    $view->signal_connect('notify::load-status' => \&load_status_cb);
-
-    $window->add($view);
-    $window->show_all();
+	# Track once all downloads are finished
+    $view->signal_connect('notify::load-status' => \&load_status_cb, $loop);
 
     $view->load_uri($url);
+    $loop->run();
 
-    Gtk2->main();
     return 0;
 }
 
@@ -70,6 +66,8 @@ sub tracker_cb {
 
 sub load_status_cb {
     my ($view) = @_;
+    my $loop = pop @_;
+
     my $uri = $view->get_uri or return;
     return unless $view->get_load_status eq 'finished';
 
@@ -91,7 +89,7 @@ sub load_status_cb {
     }
 
     print "Downlodaded $TOTAL resources with $total bytes\n";
-    Gtk2->main_quit();
+    $loop->quit();
 }
 
 
