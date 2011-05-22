@@ -35,11 +35,12 @@ sub main {
     $window->set_default_size(800, 600);
     $window->signal_connect(destroy => sub { Gtk2->main_quit() });
 
+	my $session = Gtk2::WebKit::WebView->webkit_get_default_session();
+    $session->signal_connect('request-started' => \&tracker_cb);
+
     my $view = Gtk2::WebKit::WebView->new();
-    my $button = Gtk2::Button->new("Capture");
 
     # Track all downloads
-    $view->signal_connect('resource-request-starting' => \&tracker_cb);
     $view->signal_connect('notify::load-status' => \&load_status_cb);
 
     $window->add($view);
@@ -53,30 +54,14 @@ sub main {
 
 
 sub tracker_cb {
-    my ($view, $frame, $resource, $request, $response) = @_;
+    my ($session, $message, $socket) = @_;
 
-    my $uri = $request->get_uri;
-
-    return if $uri eq 'about:blank';
-    print "Resource $uri\n";
     ++$TOTAL;
-    
-    return;
-    
-    # This doesn't work :(
 
-    my $message = $request->get_message;
-    if (! $message) {
-        print "Can't get message for $uri\n";
-        return FALSE; 
-    }
-
+	my $uri = "Resource $TOTAL";
     my $start = time;
-    $message->signal_connect("got-headers" => sub {
+    $message->signal_connect("finished" => sub {
         printf "Downloaded %s in %.2f seconds\n", $uri, time - $start;
-    });
-    $message->signal_connect("notify::reason-phrase", sub {
-        print "Change!!!\n";
     });
 
     return;
