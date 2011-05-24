@@ -35,12 +35,13 @@ sub main {
 
     # Track all downloads
 	my $session = Gtk2::WebKit->get_default_session();
-    $session->signal_connect('request-started' => \&tracker_cb);
+    my %resources;
+    $session->signal_connect('request-started' => \&tracker_cb, \%resources);
 
     my $view = Gtk2::WebKit::WebView->new();
 
 	# Track once all downloads are finished
-    $view->signal_connect('notify::load-status' => \&load_status_cb, $loop);
+    $view->signal_connect('notify::load-status' => \&load_status_cb, [ $loop, \%resources ]);
 
     $view->load_uri($url);
     $loop->run();
@@ -50,14 +51,17 @@ sub main {
 
 
 sub tracker_cb {
-    my ($session, $message, $socket) = @_;
-
+    my ($session, $message, $socket, $resources) = @_;
     ++$TOTAL;
 
-	my $uri = "Resource $TOTAL";
+    my $uri = $message->get_uri->to_string;
     my $start = time;
+    $resources->{$uri}{start} = time;
+    $resources->{$uri}{uri} = $uri;
     $message->signal_connect("finished" => sub {
-        printf "Downloaded %s in %.2f seconds\n", $uri, time - $start;
+        my $end = $resources->{$uri}{end} = time;
+        my $elapsed = $resources->{$uri}{elapsed} = $end - $start;
+#        printf "Downloaded %s in %.2f seconds\n", $uri, $elapsed;
     });
 
     return;
@@ -65,8 +69,8 @@ sub tracker_cb {
 
 
 sub load_status_cb {
+    my ($loop, $resources) = @{ pop @_ };
     my ($view) = @_;
-    my $loop = pop @_;
 
     my $uri = $view->get_uri or return;
     return unless $view->get_load_status eq 'finished';
@@ -75,20 +79,25 @@ sub load_status_cb {
     my $data_source = $frame->get_data_source;
     return if $data_source->is_loading;
 
-    my $total = 0;
-    my $size = 0;
-    my $main_resource = $data_source->get_main_resource;
-    $size = length($main_resource->get_data // '');
-    $total += $size;
-    printf "%s %d bytes; %s\n", $main_resource->get_uri, $size, $main_resource->get_mime_type // '';
-
-    foreach my $sub_resource ($data_source->get_subresources) {
-        $size = length($sub_resource->get_data // '');
-        $total += $size;
-        printf "%s %d bytes; %s\n", $sub_resource->get_uri, $size, $sub_resource->get_mime_type // '';
+    my $bytes = 0;
+    foreach my $resource ($data_source->get_main_resource, $data_source->get_subresources) {
+        my $uri = $resource->get_uri;
+        my $data = $resources->{$uri};
+        my $time;
+        if (! $data) {
+            print "Can't find data for $uri\n";
+            $time = "???";
+        }
+        else {
+            $time = $resources->{$uri}{elapsed};
+            $time = defined $time ? sprintf "%.2f", $time : 'undef';
+        }
+        my $size = length($resource->get_data // '');
+        $bytes += $size;
+        printf "%s %d bytes; %s in %s sec\n", $uri, $size, $resource->get_mime_type // 'No mime-type', $time;
     }
 
-    print "Downlodaded $TOTAL resources with $total bytes\n";
+    print "Downlodaded $TOTAL resources with $bytes bytes\n";
     $loop->quit();
 }
 
