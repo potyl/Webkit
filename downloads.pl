@@ -26,6 +26,7 @@ use Data::Dumper;
 use Time::HiRes qw(time);
 
 my $TOTAL = 0;
+my $START;
 
 sub main {
     die "Usage: url\n" unless @ARGV;
@@ -43,6 +44,7 @@ sub main {
 	# Track once all downloads are finished
     $view->signal_connect('notify::load-status' => \&load_status_cb, [ $loop, \%resources ]);
 
+    $START = time;
     $view->load_uri($url);
     $loop->run();
 
@@ -56,12 +58,14 @@ sub tracker_cb {
 
     my $uri = $message->get_uri->to_string;
     my $start = time;
-    $resources->{$uri}{start} = time;
-    $resources->{$uri}{uri} = $uri;
+    my $resource = $resources->{$uri} = {};
+    $resource->{start} = time;
+    $resource->{uri} = $uri;
     $message->signal_connect("finished" => sub {
-        my $end = $resources->{$uri}{end} = time;
-        my $elapsed = $resources->{$uri}{elapsed} = $end - $start;
-#        printf "Downloaded %s in %.2f seconds\n", $uri, $elapsed;
+        my $end = $resource->{end} = time;
+        my $elapsed = $resource->{elapsed} = $end - $start;
+        my $status_code = $resource->{status_code} = $message->get('status-code') // 'undef';
+        printf "Downloaded %s in %.2f seconds; code: %s\n", $uri, $elapsed, $status_code;
     });
 
     return;
@@ -74,6 +78,7 @@ sub load_status_cb {
 
     my $uri = $view->get_uri or return;
     return unless $view->get_load_status eq 'finished';
+    my $end = time;
 
     my $frame = $view->get_main_frame;
     my $data_source = $frame->get_data_source;
@@ -82,6 +87,8 @@ sub load_status_cb {
     my $bytes = 0;
     foreach my $resource ($data_source->get_main_resource, $data_source->get_subresources) {
         my $uri = $resource->get_uri;
+        next if $uri eq 'about:blank';
+
         my $data = $resources->{$uri};
         my $time;
         if (! $data) {
@@ -94,10 +101,12 @@ sub load_status_cb {
         }
         my $size = length($resource->get_data // '');
         $bytes += $size;
-        printf "%s %d bytes; %s in %s sec\n", $uri, $size, $resource->get_mime_type // 'No mime-type', $time;
+        my $mime = $resource->get_mime_type // 'No mime-type';
+        my $status_code = $data->{status_code} // 'undef';
+        printf "%s %d bytes; %s (%s) in %s sec\n", $uri, $size, $mime, $status_code, $time;
     }
 
-    print "Downlodaded $TOTAL resources with $bytes bytes\n";
+    printf "Downlodaded $TOTAL resources with $bytes bytes in %.2f seconds\n", $end - $START;
     $loop->quit();
 }
 
