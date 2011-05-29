@@ -2,50 +2,50 @@
 #include <webkit/webkit.h>
 
 static void destroy_cb(GtkWidget* widget, gpointer data) {
-  gtk_main_quit();
+    gtk_main_quit();
 }
 
 int main(int argc, char* argv[]) {
-  gtk_init(&argc, &argv);
-  
-  if (argc == 1) {
-  	printf("Usage: URI\n");
-  	return 1;
-  }
-  const char *uri = argv[1];
+    gtk_init(&argc, &argv);
 
-  if(!g_thread_supported())
-    g_thread_init(NULL);
+    if (argc == 1) {
+        printf("Usage: URI\n");
+        return 1;
+    }
+    const char *uri = argv[1];
 
-  // Create a Window, set colormap to RGBA
-  GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  GdkScreen *screen = gtk_widget_get_screen(window);
-  GdkColormap *rgba = gdk_screen_get_rgba_colormap (screen);
+    if(!g_thread_supported())
+        g_thread_init(NULL);
 
-  if (rgba && gdk_screen_is_composited (screen)) {
-    gtk_widget_set_default_colormap(rgba);
-    gtk_widget_set_colormap(GTK_WIDGET(window), rgba);
-  }
+    // Create a Window, set colormap to RGBA
+    GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GdkScreen *screen = gtk_widget_get_screen(window);
+    GdkColormap *rgba = gdk_screen_get_rgba_colormap (screen);
 
-  gtk_window_set_default_size(GTK_WINDOW(window), 600, 400);
-  g_signal_connect(window, "destroy", G_CALLBACK(destroy_cb), NULL);
+    if (rgba && gdk_screen_is_composited (screen)) {
+        gtk_widget_set_default_colormap(rgba);
+        gtk_widget_set_colormap(GTK_WIDGET(window), rgba);
+    }
 
-  // Optional: for dashboard style borderless windows
-  gtk_window_set_decorated(GTK_WINDOW(window), FALSE);
+    gtk_window_set_default_size(GTK_WINDOW(window), 600, 400);
+    g_signal_connect(window, "destroy", G_CALLBACK(destroy_cb), NULL);
+
+    // Optional: for dashboard style borderless windows
+    gtk_window_set_decorated(GTK_WINDOW(window), FALSE);
 
 
-  // Create a WebView, set it transparent, add it to the window
-  WebKitWebView* web_view = WEBKIT_WEB_VIEW(webkit_web_view_new());
-  webkit_web_view_set_transparent(web_view, TRUE);
-  gtk_container_add (GTK_CONTAINER(window), GTK_WIDGET(web_view));
+    // Create a WebView, set it transparent, add it to the window
+    WebKitWebView* web_view = WEBKIT_WEB_VIEW(webkit_web_view_new());
+    webkit_web_view_set_transparent(web_view, TRUE);
+    gtk_container_add (GTK_CONTAINER(window), GTK_WIDGET(web_view));
 
-  // Load a default page
-  webkit_web_view_load_uri(web_view, uri);
+    // Load a default page
+    webkit_web_view_load_uri(web_view, uri);
 
-  // Show it and continue running until the window closes
-  gtk_widget_grab_focus(GTK_WIDGET(web_view));
-  gtk_widget_show_all(window);
-  gtk_main();
-  return 0;
+    // Show it and continue running until the window closes
+    gtk_widget_grab_focus(GTK_WIDGET(web_view));
+    gtk_widget_show_all(window);
+    gtk_main();
+    return 0;
 }
 

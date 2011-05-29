@@ -32,16 +32,16 @@ sub main {
     die "Usage: url\n" unless @ARGV;
     my ($url) = @ARGV;
 
-	my $loop = Glib::MainLoop->new();
+    my $loop = Glib::MainLoop->new();
 
     # Track all downloads
-	my $session = Gtk2::WebKit->get_default_session();
+    my $session = Gtk2::WebKit->get_default_session();
     my %resources;
     $session->signal_connect('request-started' => \&tracker_cb, \%resources);
 
     my $view = Gtk2::WebKit::WebView->new();
 
-	# Track once all downloads are finished
+    # Track once all downloads are finished
     $view->signal_connect('notify::load-status' => \&load_status_cb, [ $loop, \%resources ]);
 
     $START = time;
