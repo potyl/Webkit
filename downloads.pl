@@ -52,6 +52,7 @@ sub main {
 }
 
 
+# Called when WebKit is about to download a new resource (document, page, image, etc).
 sub tracker_cb {
     my ($session, $message, $socket, $resources) = @_;
     ++$TOTAL;
@@ -72,6 +73,7 @@ sub tracker_cb {
 }
 
 
+# Called when webkit updates it's 'load-status'.
 sub load_status_cb {
     my ($loop, $resources) = @{ pop @_ };
     my ($view) = @_;
