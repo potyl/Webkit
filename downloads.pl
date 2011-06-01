@@ -12,7 +12,7 @@ Simple usage:
 
 =head1 DESCRIPTION
 
-Tracks the downloads for one url.
+Tracks all the downloads that are triggered for a starting page.
 
 =cut
 
