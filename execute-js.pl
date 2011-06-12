@@ -21,13 +21,14 @@ use warnings;
 
 use Glib qw(TRUE FALSE);
 use Gtk2 -init;
-use Gtk2::WebKit;
+use WWW::WebKit;
 use Data::Dumper;
 use Cairo;
 
 
 sub main {
-    my ($url) = @ARGV or die "Usage: url\n";
+    my ($url) = @ARGV;
+    $url ||= 'http://localhost:3001/';
 
     my $window = Gtk2::Window->new('toplevel');
     my $screen = $window->get_screen;
@@ -35,7 +36,7 @@ sub main {
     $window->set_default_size(800, 600);
     $window->signal_connect(destroy => sub { Gtk2->main_quit() });
 
-    my $view = Gtk2::WebKit::WebView->new();
+    my $view = WWW::WebKit::WebView->new();
     my $button = Gtk2::Button->new("Execute");
     my $entry = Gtk2::Entry->new();
 

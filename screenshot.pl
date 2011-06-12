@@ -25,19 +25,20 @@ use warnings;
 
 use Glib qw(TRUE FALSE);
 use Gtk2 -init;
-use Gtk2::WebKit;
+use WWW::WebKit;
 use Data::Dumper;
 
 
 sub main {
-    die "Usage: url file\n" unless @ARGV == 2;
     my ($url, $file) = @ARGV;
+    $url ||= 'http://localhost:3001/';
+    $file ||= 'image.png';
 
     my $window = Gtk2::Window->new('toplevel');
     $window->set_default_size(800, 600);
     $window->signal_connect(destroy => sub { Gtk2->main_quit() });
 
-    my $view = Gtk2::WebKit::WebView->new();
+    my $view = WWW::WebKit::WebView->new();
 
     # Take a screenshot once all is loaded
     $view->signal_connect('notify::load-status' => \&load_status_cb, $file);

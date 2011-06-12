@@ -21,7 +21,8 @@ use warnings;
 
 use Glib qw(TRUE FALSE);
 use Gtk2 -init;
-use Gtk2::WebKit;
+use HTTP::Soup;
+use WWW::WebKit;
 use Data::Dumper;
 use Time::HiRes qw(time);
 
@@ -29,17 +30,17 @@ my $TOTAL = 0;
 my $START;
 
 sub main {
-    die "Usage: url\n" unless @ARGV;
     my ($url) = @ARGV;
+    $url ||= 'http://localhost:3001/';
 
     my $loop = Glib::MainLoop->new();
 
     # Track all downloads
-    my $session = Gtk2::WebKit->get_default_session();
+    my $session = WWW::WebKit->get_default_session();
     my %resources;
     $session->signal_connect('request-started' => \&tracker_cb, \%resources);
 
-    my $view = Gtk2::WebKit::WebView->new();
+    my $view = WWW::WebKit::WebView->new();
 
     # Track once all downloads are finished
     $view->signal_connect('notify::load-status' => \&load_status_cb, [ $loop, \%resources ]);
@@ -66,8 +67,12 @@ sub tracker_cb {
         my $end = $resource->{end} = time;
         my $elapsed = $resource->{elapsed} = $end - $start;
         my $status_code = $resource->{status_code} = $message->get('status-code') // 'undef';
-        printf "Downloaded %s in %.2f seconds; code: %s\n", $uri, $elapsed, $status_code;
+        #printf "Downloaded %s in %.2f seconds; code: %s\n", $uri, $elapsed, $status_code;
     });
+
+#    $message->signal_connect('got-chunk' => sub {
+#        print "Chunk @_\n";
+#    });
 
     return;
 }
@@ -87,7 +92,7 @@ sub load_status_cb {
     return if $data_source->is_loading;
 
     my $bytes = 0;
-    foreach my $resource ($data_source->get_main_resource, $data_source->get_subresources) {
+    foreach my $resource ($data_source->get_main_resource, @{ $data_source->get_subresources }) {
         my $uri = $resource->get_uri;
         next if $uri eq 'about:blank';
 

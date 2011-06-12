@@ -24,13 +24,13 @@ use warnings;
 
 use Glib qw(TRUE FALSE);
 use Gtk2 -init;
-use Gtk2::WebKit;
+use WWW::WebKit;
 use Data::Dumper;
 
 
 sub main {
-    die "Usage: url\n" unless @ARGV;
     my ($url) = @ARGV;
+    $url ||= 'http://localhost:3001/';
 
     my $window = Gtk2::Window->new('toplevel');
     my $screen = $window->get_screen;
@@ -44,7 +44,7 @@ sub main {
     $window->signal_connect(destroy => sub { Gtk2->main_quit() });
     $window->set_decorated(FALSE);
 
-    my $view = Gtk2::WebKit::WebView->new();
+    my $view = WWW::WebKit::WebView->new();
     $view->set_transparent(TRUE);
 
     # Pack the widgets together
