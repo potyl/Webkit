@@ -51,6 +51,18 @@ sub main {
     $window->add($view);
     $window->show_all();
 
+    # Track once all downloads are finished
+    $view->signal_connect('notify::load-status' => sub {
+        $view->get_uri or return;
+        return unless $view->get_load_status eq 'finished';
+
+        $view->execute_script(q{
+            var body = document.getElementsByTagName("body").item(0);
+            body.style.backgroundColor = rgba(ff, 0, 0, 7f);
+        });
+    });
+
+
     $view->load_uri($url);
     $view->grab_focus();
 
