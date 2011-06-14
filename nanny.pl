@@ -40,6 +40,7 @@ sub main {
     
     # Add a callback to monitor where each URI will go and reject the URI if the
     # location differs from the original website.
+    # This only blocks, iframes and clicked links. Javascript and CSS are not blocked.
     $view->signal_connect("navigation-policy-decision-requested" => sub {
         my ($view, $frame, $request, $action, $decision) = @_;
         
