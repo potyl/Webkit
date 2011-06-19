@@ -1,7 +1,8 @@
 WEBKIT=$(shell pkg-config --cflags --libs webkit-1.0)
 
+CFLAGS=-std=c99
+
 .PHONY: all
-all: transparent download-cb
 
 
 .PHONY: run
@@ -10,11 +11,12 @@ run: transparent
 
 
 transparent: transparent.c
-	$(CC) $(WEBKIT) -o $@ $<
+	$(CC) $(CFLAGS) $(WEBKIT) -o $@ $<
+
 
 
 download-cb: download-cb.c
-	$(CC) $(WEBKIT) -o $@ $<
+	$(CC) $(CFLAGS) $(WEBKIT) -o $@ $<
 
 
 .PHONY: clean
