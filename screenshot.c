@@ -1,7 +1,6 @@
 #include <gtk/gtk.h>
 #include <webkit/webkit.h>
 #include <libsoup/soup.h>
-
 #include <cairo-pdf.h>
 
 
@@ -30,12 +29,10 @@ load_status_cb (GObject* object, GParamSpec* pspec, gpointer data) {
     );
 
     cairo_t *cr = cairo_create(surface);
-//    gtk_widget_draw(gtk_widget_get_parent(GTK_WIDGET(web_view)), cr);
     gtk_widget_draw(GTK_WIDGET(web_view), cr);
     cairo_destroy(cr);
     cairo_surface_destroy(surface);
 
-    printf("Finished with %s; pdf saved as %s\n", webkit_web_view_get_uri(web_view), filename);
     g_main_loop_quit(loop);
 }
 
@@ -64,11 +61,9 @@ main (int argc, char* argv[]) {
     g_signal_connect(web_view, "notify::load-status", G_CALLBACK(load_status_cb), loop);
     webkit_web_view_load_uri(web_view, uri);
 
-    GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-//    gtk_window_set_default_size(GTK_WINDOW(window), 600, 400);
-    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-    gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(web_view));
-    gtk_widget_show_all(window);
+    GtkWidget *offscren = gtk_offscreen_window_new();
+    gtk_container_add(GTK_CONTAINER(offscren), GTK_WIDGET(web_view));
+    gtk_widget_show_all(offscren);
 
     g_main_loop_run(loop);
     g_object_unref(web_view);
