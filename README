@@ -7,3 +7,4 @@ downloads.pl   - track the downloads for one page
 execute-js.pl  - execute javascript on a page
 nanny.pl       - very simple parental control
 git.pl         - display a web page using GIR
+screenshot     - save a screenshot as a PDF
