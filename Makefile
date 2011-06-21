@@ -19,7 +19,7 @@ download-cb: download-cb.c
 
 
 screenshot: screenshot.c
-	$(CC) $(CFLAGS) $(WEBKIT) `pkg-config --cflags --libs cairo cairo-pdf` -o $@ $<
+	$(CC) $(CFLAGS) `pkg-config --cflags --libs webkitgtk-3.0 cairo-pdf` -o $@ $<
 
 
 .PHONY: clean
