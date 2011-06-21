@@ -3,23 +3,11 @@
 #include <libsoup/soup.h>
 #include <cairo-pdf.h>
 
-
 static void
-load_status_cb (GObject* object, GParamSpec* pspec, gpointer data);
-
-
-static void
-load_status_cb (GObject* object, GParamSpec* pspec, gpointer data) {
-    const gchar *filename = (const gchar *) data;
-
-    WebKitWebView *web_view = WEBKIT_WEB_VIEW(object);
-    WebKitLoadStatus status = webkit_web_view_get_load_status(web_view);
-    if (status != WEBKIT_LOAD_FINISHED) {
-        return;
-    }
-
+save_as_pdf (GtkWidget *widget, const char *filename) {
     GtkAllocation allocation;
-    gtk_widget_get_allocation(GTK_WIDGET(web_view), &allocation);
+
+    gtk_widget_get_allocation(widget, &allocation);
     cairo_surface_t *surface = cairo_pdf_surface_create(
         filename,
         1.0 * allocation.width,
@@ -27,9 +15,21 @@ load_status_cb (GObject* object, GParamSpec* pspec, gpointer data) {
     );
 
     cairo_t *cr = cairo_create(surface);
-    gtk_widget_draw(GTK_WIDGET(web_view), cr);
+    gtk_widget_draw(widget, cr);
     cairo_destroy(cr);
     cairo_surface_destroy(surface);
+}
+
+
+static void
+load_status_cb (GObject* object, GParamSpec* pspec, gpointer data) {
+    WebKitWebView *web_view = WEBKIT_WEB_VIEW(object);
+    WebKitLoadStatus status = webkit_web_view_get_load_status(web_view);
+    if (status != WEBKIT_LOAD_FINISHED) {
+        return;
+    }
+
+    save_as_pdf(GTK_WIDGET(web_view), (const gchar *) data);
 
     gtk_main_quit();
 }
