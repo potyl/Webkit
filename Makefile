@@ -1,9 +1,9 @@
-WEBKIT=$(shell pkg-config --cflags --libs webkit-1.0)
+WEBKIT=$(shell pkg-config --cflags --libs webkitgtk-3.0)
 
 CFLAGS=-std=c99
 
 .PHONY: all
-
+all: transparent download-cb screenshot
 
 .PHONY: run
 run: transparent
@@ -14,9 +14,12 @@ transparent: transparent.c
 	$(CC) $(CFLAGS) $(WEBKIT) -o $@ $<
 
 
-
 download-cb: download-cb.c
 	$(CC) $(CFLAGS) $(WEBKIT) -o $@ $<
+
+
+screenshot: screenshot.c
+	$(CC) $(CFLAGS) $(WEBKIT) `pkg-config --cflags --libs cairo cairo-pdf` -o $@ $<
 
 
 .PHONY: clean

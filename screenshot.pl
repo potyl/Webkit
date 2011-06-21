@@ -26,6 +26,7 @@ use warnings;
 use Glib qw(TRUE FALSE);
 use Gtk2 -init;
 use WWW::WebKit;
+use Cairo;
 use Data::Dumper;
 
 
@@ -59,6 +60,7 @@ sub load_status_cb {
     my $uri = $view->get_uri or return;
     return unless $view->get_load_status eq 'finished';
 
+
     my $pixmap = $view->get_snapshot();
     if (! $pixmap) {
         warn "Can't get a snapshot from webkit";
@@ -75,6 +77,15 @@ sub load_status_cb {
     }
     $pixbuf->save($file, 'png');
     print "Screenshot saved as $file\n";
+
+
+    my $surface = Cairo::PdfSurface->create("a.pdf", 1.0 * $width, 1.0 * $height);
+    my $cr = Cairo::Context->create($surface);
+    Gtk2::Widget::draw($view, $cr);
+    #$view->draw($cr);
+    $cr->destroy();
+    $surface->destroy();
+
 
     Gtk2->main_quit();
 }
