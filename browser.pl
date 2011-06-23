@@ -16,12 +16,7 @@ Glib::Object::Introspection->setup(
   version  => '3.0',
   package  => 'WebKit'
 );
-
-Glib::Object::Introspection->setup(
-  basename => 'cairo',
-  version  => '1.0',
-  package  => 'Cairo'
-);
+use Cairo;
 
 Gtk3::init(0, []);
 my ($url) = @ARGV;
@@ -46,10 +41,8 @@ $view->signal_connect('notify::load-status' => sub {
     my ($width, $height) = ($view->get_allocated_width, $view->get_allocated_height);
 
     my $surface = Cairo::PdfSurface->create("a.pdf", 1.0 * $width, 1.0 * $height);
-    my $cr = CairoContext->create($surface);
+    my $cr = Cairo::Context->create($surface);
     $view->draw($cr);
-    $cr->destroy();
-    $surface->destroy();
 });
 
 $view->load_uri($url);
