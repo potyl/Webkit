@@ -58,8 +58,6 @@ Gtk3->main();
 sub save_as_pdf {
     my ($widget, $filename) = @_;
 
-#    my $allocation = $view->get_allocation;
-#    my ($width, $height) = ($allocation->{width}, $allocation->{height});
     my ($width, $height) = ($widget->get_allocated_width, $widget->get_allocated_height);
     print "$filename has size: $width x $height\n";
     my $surface = Cairo::PdfSurface->create($filename, $width, $height);
