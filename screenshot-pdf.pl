@@ -48,24 +48,8 @@ $view->signal_connect('notify::load-status' => sub {
 $view->load_uri($url);
 
 
-# Grab a picture when ready
-my $button = Gtk3::Button->new();
-$button->set_label("Screenshot");
-$button->signal_connect(clicked => sub {
-    save_as_pdf($view, $filename);
-    Gtk3->main_quit();
-});
-
-my $window = Gtk3::Window->new('toplevel');
-$window->set_default_size(800, 600);
-$window->signal_connect(destroy => sub { Gtk3->main_quit() });
-
-my $box = Gtk3::VBox->new(0, 0);
-$box->pack_start($button, TRUE, TRUE, 2);
-$box->pack_start($view, TRUE, TRUE, 2);
-
-$window->add($box);
-
+my $window = Gtk3::OffscreenWindow->new();
+$window->add($view);
 $window->show_all();
 
 Gtk3->main();
