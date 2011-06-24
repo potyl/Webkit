@@ -6,6 +6,11 @@ nanny.pl - Limit the websites that can be browsed
 
 =head1 SYNOPSIS
 
+nanny.pl [URI]
+
+    -h, --help    print this help message
+    -s, --super   use "super" mode and block all resources (js & css)
+
 Simple usage:
 
     nanny.pl http://www.google.com/
