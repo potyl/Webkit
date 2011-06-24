@@ -2,92 +2,125 @@
 
 =head1 NAME
 
-screenshot.pl - Take a screenshot of a page
+screenshot.pl - Take a screenshot
 
 =head1 SYNOPSIS
 
+screenshot.pl [OPTION]... [URI [FILE]]
+
+    -h, --help             print this help message
+    -t TYPE, --type TYPE   format type (svg, ps, pdf, png)
+
 Simple usage:
 
-    screenshot.pl http://www.google.com/ pic.png
-
-Or without showing a window
-
-    xvfb-run --server-args="-screen 0 1024x768x24" screenshot.pl http://www.google.com/ pic.png
+    screenshot.pl --type svg http://www.google.com/
 
 =head1 DESCRIPTION
 
-Loads an URI and takes a screeshot once the page is rendered.
+Take a screenshot of a page.
 
 =cut
 
 use strict;
 use warnings;
 
-use Glib qw(TRUE FALSE);
-use Gtk2 -init;
-use WWW::WebKit;
-use Cairo;
 use Data::Dumper;
+use Getopt::Long qw(:config auto_help);
+use Pod::Usage;
 
+use Glib::Object::Introspection;
+
+Glib::Object::Introspection->setup(
+  basename => 'Gtk',
+  version  => '3.0',
+  package  => 'Gtk3'
+);
+
+Glib::Object::Introspection->setup(
+  basename => 'WebKit',
+  version  => '3.0',
+  package  => 'WebKit'
+);
+use Cairo::GObject;
+use constant TRUE  => 1;
+use constant FALSE => 0;
+
+my %TYPES = (
+    svg => sub { save_as_vector('Cairo::SvgSurface', @_) },
+    ps  => sub { save_as_vector('Cairo::PsSurface', @_) },
+    pdf => sub { save_as_vector('Cairo::PdfSurface', @_) },
+    png => \&save_as_png,
+);
 
 sub main {
-    my ($url, $file) = @ARGV;
+    Gtk3::init(0, []);
+
+    GetOptions(
+        't|type=s' => \my $type,
+    ) or podusage(1);
+
+    if ($type) {
+        $type = lc $type;
+        die "Type must be one of: ", join(", ", keys %TYPES) unless exists $TYPES{$type};
+    }
+    else {
+        $type = 'pdf';
+    }
+    my $save_as_func = $TYPES{$type};
+
+    my ($url, $filename) = @ARGV;
     $url ||= 'http://localhost:3001/';
-    $file ||= 'image.png';
+    $filename ||= "screenshot.$type";
 
-    my $window = Gtk2::Window->new('toplevel');
-    $window->set_default_size(800, 600);
-    $window->signal_connect(destroy => sub { Gtk2->main_quit() });
+    my $view = WebKit::WebView->new();
+    $view->signal_connect('notify::load-status' => sub {
+        return unless $view->get_uri and ($view->get_load_status eq 'finished');
 
-    my $view = WWW::WebKit::WebView->new();
+        printf "mapped? %s\n", $view->get_mapped ? 'YES' : 'NO';
+        printf "visible? %s\n", $view->get_visible ? 'YES' : 'NO';
+        printf "sensitive? %s\n", $view->is_sensitive ? 'YES' : 'NO';
 
-    # Take a screenshot once all is loaded
-    $view->signal_connect('notify::load-status' => \&load_status_cb, $file);
+        # Sometimes the program dies with:
+        #  (<unknown>:19092): Gtk-CRITICAL **: gtk_widget_draw: assertion `!widget->priv->alloc_needed' failed
+        # This seem to happend is there's a newtwork error and we can't download
+        # external stuff (e.g. facebook iframe). This timeout seems to help a bit.
+        Glib::Timeout->add(1000, sub {
+            $save_as_func->($view, $filename);
+            Gtk3->main_quit();
+        });
+    });
+    $view->load_uri($url);
 
 
+    my $window = Gtk3::OffscreenWindow->new();
     $window->add($view);
     $window->show_all();
 
-    $view->load_uri($url);
-
-    Gtk2->main();
+    Gtk3->main();
     return 0;
 }
 
 
-sub load_status_cb {
-    my ($view, undef, $file) = @_;
-    my $uri = $view->get_uri or return;
-    return unless $view->get_load_status eq 'finished';
+sub save_as_vector {
+    my ($surface_class, $widget, $filename) = @_;
 
-
-    my $pixmap = $view->get_snapshot();
-    if (! $pixmap) {
-        warn "Can't get a snapshot from webkit";
-        return;
-    }
-
-    my $allocation = $view->allocation;
-    my ($width, $height) = ($allocation->width, $allocation->height);
-
-    my $pixbuf = Gtk2::Gdk::Pixbuf->get_from_drawable($pixmap, undef, 0, 0, 0, 0, $width, $height);
-    if (! $pixbuf) {
-        warn "Can't get a pixbuf from the drawable";
-        return;
-    }
-    $pixbuf->save($file, 'png');
-    print "Screenshot saved as $file\n";
-
-
-    my $surface = Cairo::PdfSurface->create("a.pdf", 1.0 * $width, 1.0 * $height);
+    my ($width, $height) = ($widget->get_allocated_width, $widget->get_allocated_height);
+    print "$filename has size: $width x $height\n";
+    my $surface = $surface_class->create($filename, $width, $height);
     my $cr = Cairo::Context->create($surface);
-    Gtk2::Widget::draw($view, $cr);
-    #$view->draw($cr);
-    $cr->destroy();
-    $surface->destroy();
+    $widget->draw($cr);
+}
 
 
-    Gtk2->main_quit();
+sub save_as_png {
+    my ($widget, $filename) = @_;
+
+    my ($width, $height) = ($widget->get_allocated_width, $widget->get_allocated_height);
+    print "$filename has size: $width x $height\n";
+    my $surface = Cairo::ImageSurface->create(argb32 => $width, $height);
+    my $cr = Cairo::Context->create($surface);
+    $widget->draw($cr);
+    $surface->write_to_png($filename);
 }
 
 
