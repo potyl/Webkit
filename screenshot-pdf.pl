@@ -31,9 +31,20 @@ my $view = WebKit::WebView->new();
 $view->signal_connect('notify::load-status' => sub {
     return unless $view->get_uri and ($view->get_load_status eq 'finished');
 
-    save_as_pdf($view, $filename);
-    Gtk3->main_quit();
-}) if 0;
+    printf "mapped? %s\n", $view->get_mapped ? 'YES' : 'NO';
+    printf "visible? %s\n", $view->get_visible ? 'YES' : 'NO';
+    printf "sensitive? %s\n", $view->is_sensitive ? 'YES' : 'NO';
+
+    print "Is mapped!\n";
+    # Sometimes the program dies with:
+    #  (<unknown>:19092): Gtk-CRITICAL **: gtk_widget_draw: assertion `!widget->priv->alloc_needed' failed
+    # This seem to happend is there's a newtwork error and we can't download
+    # external stuff (e.g. facebook iframe). This timeout seems to help a bit.
+    Glib::Timeout->add(1000, sub {
+        save_as_pdf($view, $filename);
+        Gtk3->main_quit();
+    });
+});
 $view->load_uri($url);
 
 
