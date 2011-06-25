@@ -84,7 +84,7 @@ sub main {
         #  (<unknown>:19092): Gtk-CRITICAL **: gtk_widget_draw: assertion `!widget->priv->alloc_needed' failed
         # This seem to happend is there's a newtwork error and we can't download
         # external stuff (e.g. facebook iframe). This timeout seems to help a bit.
-        Glib::Timeout->add(1000, sub {
+        Glib::Idle->add( sub {
             $save_as_func->($view, $filename);
             Gtk3->main_quit();
         });
