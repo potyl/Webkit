@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-s5.pl - Convert an S5 presentation to PDF
+s5pdf - Convert an S5 presentation to PDF
 
 =head1 SYNOPSIS
 
@@ -17,7 +17,7 @@ s5.pl [OPTION]... [URI [FILE]]
 
 Simple usage:
 
-    s5.pl --type svg s5-presentation.html
+    s5pdf --type svg s5-presentation.html
 
 =head1 DESCRIPTION
 
