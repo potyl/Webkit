@@ -31,6 +31,7 @@ use Data::Dumper;
 use Getopt::Long qw(:config auto_help);
 use Pod::Usage;
 use URI;
+use File::Basename qw(fileparse);
 use Cwd qw(abs_path);
 
 use Glib::Object::Introspection;
@@ -61,8 +62,9 @@ sub main {
     ) or pod2usage(1);
     my ($uri, $filename) = @ARGV or pod2usage(1);
     $uri = "file://" . abs_path($uri) if -e $uri;
-    $filename ||= "s5.pdf";
 
+    # The default file name is baed on there uri's filename
+    $filename ||= sprintf "%s.pdf", fileparse(URI->new($uri)->path, qr/\.[^.]*/) || 's5';
 
     my $view = WebKit::WebView->new();
 
