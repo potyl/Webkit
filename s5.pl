@@ -9,6 +9,7 @@ s5.pl - Convert an S5 presentation to PDF
 s5.pl [OPTION]... [URI [FILE]]
 
     -s,        --show           show the presentation
+    -v,        --verbose        enable verbose mode
     -w WIDTH,  --width WIDHT    the width of the slides in pixels
     -h HEIGHT, --height HEIGHT  the height of the slides in pixels
     -S,        --no-steps       rendender only full slides (skip the steps)
@@ -55,6 +56,7 @@ sub main {
 
     my $do_steps = 1;
     GetOptions(
+        'v|verbose'  => \my $verbose,
         's|show'     => \my $show,
         'w|width=i'  => \my $width,
         'h|height=i' => \my $height,
@@ -115,9 +117,11 @@ sub main {
 
     # The JavaScripts communicates with Perl by writting into the console. This
     # is a hack but this is the best way that I could find so far.
+    my $count = 0;
     $view->signal_connect('console-message' => sub {
         my ($widget, $message, $line, $source_id) = @_;
-        #print "CONSOLE $message at $line $source_id\n";
+        #print "CONSOLE $message at $line $source_id\n" if $verbose;
+
         my ($end) = ( $message =~ /^s5-end-of-slides: (true|false)$/) or return TRUE;
 
         # See if we need to create a new PDF or a new page
@@ -130,12 +134,16 @@ sub main {
         }
 
         # A new slide has been rendered on screen, we save it to the pdf
+        ++$count;
+        print "Saving slide $count\n";
         my $cr = Cairo::Context->create($surface);
         $view->draw($cr);
 
         # Go to the next slide or stop grabbing screenshots
         if ($end eq 'true') {
             # No more slides to grab
+            my $s = $count > 1 ? 's' : '';
+            print "Presentation $filename has $count slide$s\n";
             Gtk3->main_quit();
         }
         else {
