@@ -48,7 +48,10 @@ use constant FALSE => 0;
 sub main {
     Gtk3::init(0, []);
 
-    GetOptions() or podusage(1);
+    GetOptions(
+        'w|width=i'  => \my $width,
+        'h|height=i' => \my $height,
+    ) or podusage(1);
     my ($uri, $filename) = @ARGV or podusage(1);
     $uri = "file://$uri" if -e $uri;
     $filename ||= "s5.pdf";
@@ -63,14 +66,12 @@ sub main {
             var last_slide = (snum == smax - 1) ? true : false;
             var last_subslide = ( !incrementals[snum] || incpos >= incrementals[snum].length ) ? true : false;
             var ret = (last_slide && last_subslide) ? true : false ;
-            //console.log("last_slide: " + last_slide + "; last_subslide: " + last_subslide + "; fini: " + ret);
-            //console.log("end? " +  (  (snum == smax - 1) && ( !incrementals[snum] || incpos >= incrementals[snum].length ) ));
+            // Let know Perl if we're done with the slides
             console.log("s5-end-of-slides: " + ret);
             return ret;
         }
 
         function _next_slide () {
-            //console.log("Next slide (snum:" + snum + "; incpos: " + incpos + ") ?");
             if (!incrementals[snum] || incpos >= incrementals[snum].length) {
                 go(1);
             }
@@ -97,7 +98,7 @@ sub main {
         # This seem to happend is there's a newtwork error and we can't download
         # external stuff (e.g. facebook iframe). This timeout seems to help a bit.
         Glib::Idle->add(sub {
-            $view->execute_script(q{ _is_end_of_slides(); });
+            $view->execute_script('_is_end_of_slides();');
         });
     });
     $view->load_uri($uri);
@@ -130,14 +131,14 @@ sub main {
         }
         else {
             # Go on with the slide
-            $view->execute_script(q{ _next_slide(); });
+            $view->execute_script('_next_slide();');
         }
 
         return TRUE;
     });
 
     my $window = Gtk3::OffscreenWindow->new();
-    $window->set_default_size(800, 600);
+    $window->set_default_size($width || 800, $height || 400);
     $window->add($view);
     $window->show_all();
 
