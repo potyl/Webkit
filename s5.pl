@@ -51,12 +51,11 @@ sub main {
     my ($uri, $filename) = @ARGV or podusage(1);
     $uri = "file://$uri" if -e $uri;
     $filename ||= "s5.pdf";
-    my $filename_pattern = $filename;
-    $filename_pattern =~ s/\.pdf$//;
-    my $filename_i = 1;
 
     my $view = WebKit::WebView->new();
-    my $i = 0;
+
+
+    my $surface;
     $view->signal_connect('notify::load-status' => sub {
         return unless $view->get_uri and ($view->get_load_status eq 'finished');
 
@@ -75,18 +74,24 @@ sub main {
     $view->signal_connect('console-message' => sub {
         my ($widget, $message, $line, $source_id) = @_;
         print "CONSOLE $message at $line $source_id\n";
-#if ($i > 20) {print "too many calls\n"; exit 1;}
         my ($end) = ( $message =~ /^s5-end-of-slides: (true|false)$/) or return TRUE;
 
         if ($end eq 'true') {
             Gtk3->main_quit();
         }
         else {
+            # See if we need to create a new PDF or a new page
+            if ($surface) {
+                $surface->show_page();
+            }
+            else {
+                my ($width, $height) = ($view->get_allocated_width, $view->get_allocated_height);
+                $surface = Cairo::PdfSurface->create($filename, $width, $height);
+            }
+
             # A new slide has been rendered on screen
-            $filename = sprintf "%s-%d.pdf", $filename_pattern, $filename_i++;
-            print "PDF: $filename\n";
-            save_as_pdf($view, $filename);
-$i++;
+            save_as_pdf($surface, $view);
+
             # Go on with the slide
             $view->execute_script(q{ _next_slide(); });
         }
@@ -122,8 +127,8 @@ $i++;
 
     });
 
-#    my $window = Gtk3::OffscreenWindow->new();
-    my $window = Gtk3::Window->new('toplevel');
+    my $window = Gtk3::OffscreenWindow->new();
+#    my $window = Gtk3::Window->new('toplevel');
     $window->set_default_size(600, 400);
     $window->add($view);
     $window->show_all();
@@ -134,11 +139,7 @@ $i++;
 
 
 sub save_as_pdf {
-    my ($widget, $filename) = @_;
-
-    my ($width, $height) = ($widget->get_allocated_width, $widget->get_allocated_height);
-    print "$filename has size: $width x $height\n";
-    my $surface = Cairo::PdfSurface->create($filename, $width, $height);
+    my ($surface, $widget) = @_;
     my $cr = Cairo::Context->create($surface);
     $widget->draw($cr);
 }
