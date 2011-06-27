@@ -13,7 +13,7 @@ s5.pl [OPTION]... [URI [FILE]]
     -w WIDTH,  --width WIDHT    the width of the slides in pixels
     -h HEIGHT, --height HEIGHT  the height of the slides in pixels
     -S,        --no-steps       rendender only full slides (skip the steps)
-    -h, --help                  print this help message
+    -h,        --help           print this help message
 
 Simple usage:
 
