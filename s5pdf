@@ -6,7 +6,7 @@ s5pdf - Convert an S5 presentation to PDF
 
 =head1 SYNOPSIS
 
-s5.pl [OPTION]... [URI [FILE]]
+s5pdf [OPTION]... URI [FILE]
 
     -s,        --show           show the presentation
     -v,        --verbose        enable verbose mode
