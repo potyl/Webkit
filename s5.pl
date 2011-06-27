@@ -10,6 +10,7 @@ s5.pl [OPTION]... [URI [FILE]]
 
     -w WIDTH,  --width WIDHT    the width of the slides in pixels
     -h HEIGHT, --height HEIGHT  the height of the slides in pixels
+    -S,        --no-steps       rendender only full slides (skip the steps)
     -h, --help                  print this help message
 
 Simple usage:
@@ -49,9 +50,11 @@ use Glib ':constants';
 sub main {
     Gtk3::init(0, []);
 
+    my $do_steps = 1;
     GetOptions(
         'w|width=i'  => \my $width,
         'h|height=i' => \my $height,
+        'steps!'     => \$do_steps,
     ) or pod2usage(1);
     my ($uri, $filename) = @ARGV or pod2usage(1);
     $uri = "file://$uri" if -e $uri;
@@ -62,7 +65,7 @@ sub main {
 
     # Introduce some JavaScript helper methods. This methods will communicate
     # with the Perl script by writting data to the consolse.
-    $view->execute_script(q{
+    $view->execute_script(qq{
         function _is_end_of_slides () {
             var last_slide = (snum == smax - 1) ? true : false;
             var last_subslide = ( !incrementals[snum] || incpos >= incrementals[snum].length ) ? true : false;
@@ -73,11 +76,11 @@ sub main {
         }
 
         function _next_slide () {
-            if (!incrementals[snum] || incpos >= incrementals[snum].length) {
-                go(1);
+            if ($do_steps && incrementals[snum] && incpos < incrementals[snum].length) {
+                subgo(1);
             }
             else {
-                subgo(1);
+                go(1);
             }
 
             _is_end_of_slides();
