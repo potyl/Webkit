@@ -8,6 +8,7 @@ s5.pl - Convert an S5 presentation to PDF
 
 s5.pl [OPTION]... [URI [FILE]]
 
+    -s,        --show           show the presentation
     -w WIDTH,  --width WIDHT    the width of the slides in pixels
     -h HEIGHT, --height HEIGHT  the height of the slides in pixels
     -S,        --no-steps       rendender only full slides (skip the steps)
@@ -52,6 +53,7 @@ sub main {
 
     my $do_steps = 1;
     GetOptions(
+        's|show'     => \my $show,
         'w|width=i'  => \my $width,
         'h|height=i' => \my $height,
         'steps!'     => \$do_steps,
@@ -141,7 +143,7 @@ sub main {
         return TRUE;
     });
 
-    my $window = Gtk3::OffscreenWindow->new();
+    my $window = $show ? Gtk3::Window->new('toplevel') : Gtk3::OffscreenWindow->new();
     $window->set_default_size($width || 800, $height || 400);
     $window->add($view);
     $window->show_all();
