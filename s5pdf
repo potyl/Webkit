@@ -17,7 +17,7 @@ s5.pl [OPTION]... [URI [FILE]]
 
 Simple usage:
 
-    s5pdf --type svg s5-presentation.html
+    s5pdf s5-presentation.html
 
 =head1 DESCRIPTION
 
