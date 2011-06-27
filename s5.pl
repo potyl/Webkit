@@ -41,8 +41,7 @@ Glib::Object::Introspection->setup(
   package  => 'WebKit'
 );
 use Cairo::GObject;
-use constant TRUE  => 1;
-use constant FALSE => 0;
+use Glib ':constants';
 
 
 sub main {
