@@ -8,7 +8,9 @@ s5.pl - Convert an S5 presentation to PDF
 
 s5.pl [OPTION]... [URI [FILE]]
 
-    -h, --help             print this help message
+    -w WIDTH,  --width WIDHT    the width of the slides in pixels
+    -h HEIGHT, --height HEIGHT  the height of the slides in pixels
+    -h, --help                  print this help message
 
 Simple usage:
 
