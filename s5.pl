@@ -107,7 +107,7 @@ sub main {
     # is a hack but this is the best way that I could find so far.
     $view->signal_connect('console-message' => sub {
         my ($widget, $message, $line, $source_id) = @_;
-        print "CONSOLE $message at $line $source_id\n";
+        #print "CONSOLE $message at $line $source_id\n";
         my ($end) = ( $message =~ /^s5-end-of-slides: (true|false)$/) or return TRUE;
 
         # See if we need to create a new PDF or a new page
@@ -137,20 +137,12 @@ sub main {
     });
 
     my $window = Gtk3::OffscreenWindow->new();
-#    my $window = Gtk3::Window->new('toplevel');
     $window->set_default_size(800, 600);
     $window->add($view);
     $window->show_all();
 
     Gtk3->main();
     return 0;
-}
-
-
-sub save_as_pdf {
-    my ($surface, $widget) = @_;
-    my $cr = Cairo::Context->create($surface);
-    $widget->draw($cr);
 }
 
 
