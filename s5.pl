@@ -99,7 +99,6 @@ sub main {
     # Start taking screenshot as soon as the document is loaded. Maybe we want
     # to add an onload callback and to log a message once we're ready. We want
     # to take a screenshot only when the page is done being rendered.
-    my $surface;
     $view->signal_connect('notify::load-status' => sub {
         return unless $view->get_uri and ($view->get_load_status eq 'finished');
 
@@ -117,6 +116,7 @@ sub main {
 
     # The JavaScripts communicates with Perl by writting into the console. This
     # is a hack but this is the best way that I could find so far.
+    my $surface;
     my $count = 0;
     $view->signal_connect('console-message' => sub {
         my ($widget, $message, $line, $source_id) = @_;
