@@ -52,8 +52,8 @@ sub main {
     GetOptions(
         'w|width=i'  => \my $width,
         'h|height=i' => \my $height,
-    ) or podusage(1);
-    my ($uri, $filename) = @ARGV or podusage(1);
+    ) or pod2usage(1);
+    my ($uri, $filename) = @ARGV or pod2usage(1);
     $uri = "file://$uri" if -e $uri;
     $filename ||= "s5.pdf";
 
