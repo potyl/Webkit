@@ -13,11 +13,13 @@ s5pdf [OPTION]... URI [FILE]
     -w WIDTH,  --width WIDHT    the width of the slides in pixels
     -h HEIGHT, --height HEIGHT  the height of the slides in pixels
     -S,        --no-steps       rendender only full slides (skip the steps)
+    -z LEVEL,  --zoom LEVEL     zoom level (negative values zoom out, positive zoom in)
     -h,        --help           print this help message
 
 Simple usage:
 
-    s5pdf s5-presentation.html
+    # Presentation with a zoom out of 2 levels (smaller fonts)
+    s5pdf --zoom -2 s5-presentation.html
 
 =head1 DESCRIPTION
 
@@ -60,6 +62,7 @@ sub main {
         's|show'     => \my $show,
         'w|width=i'  => \my $width,
         'h|height=i' => \my $height,
+        'z|zoom=i'   => \my $zoom,
         'steps!'     => \$do_steps,
     ) or pod2usage(1);
     my ($uri, $filename) = @ARGV or pod2usage(1);
@@ -69,6 +72,7 @@ sub main {
     $filename ||= sprintf "%s.pdf", fileparse(URI->new($uri)->path, qr/\.[^.]*/) || 's5';
 
     my $view = WebKit::WebView->new();
+    $view->set('zoom-level', 1 + ($zoom/10)) if $zoom;
 
     # Introduce some JavaScript helper methods. This methods will communicate
     # with the Perl script by writting data to the consolse.
