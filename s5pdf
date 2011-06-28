@@ -14,6 +14,7 @@ s5pdf [OPTION]... URI [FILE]
     -h HEIGHT, --height HEIGHT  the height of the slides in pixels
     -S,        --no-steps       rendender only full slides (skip the steps)
     -z LEVEL,  --zoom LEVEL     zoom level (negative values zoom out, positive zoom in)
+    -p MS,     --pause MS       number of milliseconds to wait before taking a screenshot
     -h,        --help           print this help message
 
 Simple usage:
@@ -63,6 +64,7 @@ sub main {
         'w|width=i'  => \my $width,
         'h|height=i' => \my $height,
         'z|zoom=i'   => \my $zoom,
+        'p|pause=i'  => \my $timeout,
         'steps!'     => \$do_steps,
     ) or pod2usage(1);
     my ($uri, $filename) = @ARGV or pod2usage(1);
@@ -138,21 +140,30 @@ sub main {
         }
 
         # A new slide has been rendered on screen, we save it to the pdf
-        ++$count;
-        print "Saving slide $count\n";
-        my $cr = Cairo::Context->create($surface);
-        $view->draw($cr);
+        my $grab_pdf = sub  {
+            ++$count;
+            print "Saving slide $count\n";
+            my $cr = Cairo::Context->create($surface);
+            $view->draw($cr);
 
-        # Go to the next slide or stop grabbing screenshots
-        if ($end eq 'true') {
-            # No more slides to grab
-            my $s = $count > 1 ? 's' : '';
-            print "Presentation $filename has $count slide$s\n";
-            Gtk3->main_quit();
+            # Go to the next slide or stop grabbing screenshots
+            if ($end eq 'true') {
+                # No more slides to grab
+                my $s = $count > 1 ? 's' : '';
+                print "Presentation $filename has $count slide$s\n";
+                Gtk3->main_quit();
+            }
+            else {
+                # Go on with the slide
+                $view->execute_script('_next_slide();');
+            }
+        };
+
+        if ($timeout) {
+            Glib::Timeout->add($timeout, $grab_pdf);
         }
         else {
-            # Go on with the slide
-            $view->execute_script('_next_slide();');
+            Glib::Idle->add($grab_pdf);
         }
 
         return TRUE;
