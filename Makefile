@@ -26,3 +26,4 @@ screenshot: screenshot.c
 clean:
 	rm -f transparent
 	rm -f download-cb
+	rm -f screenshot
