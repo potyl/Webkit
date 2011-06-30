@@ -12,24 +12,28 @@ process_web_view (WebKitWebView *web_view) {
 
     WebKitDOMDocument *document = webkit_web_view_get_dom_document(web_view);
 
-    WebKitDOMStyleSheetList *style_sheets = webkit_dom_document_get_style_sheets(document);
-    printf("Got document %p\n", style_sheets);
-    gulong style_sheet_length = webkit_dom_style_sheet_list_get_length(style_sheets);
+    GError *error;
+    WebKitDOMXPathNSResolver *resolver = webkit_dom_document_create_ns_resolver(document, (WebKitDOMNode *) document);
+    WebKitDOMXPathResult *result = webkit_dom_document_evaluate(document, "//a", (WebKitDOMNode *) document, resolver, 0, NULL, &error);
+    printf("XPath returned: %p\n", result);
 
-    for (gulong i = 0; i < style_sheet_length; ++i) {
-        WebKitDOMStyleSheet *style_sheet = webkit_dom_style_sheet_list_item(style_sheets, i);
-        printf("Style sheet %d = %p\n", (int) i, style_sheet);
 
-        webkit_dom_style_sheet_get_css_rules(style_sheet);
-//cssRules
+    gushort type = webkit_dom_xpath_result_get_result_type(result);
+    printf("Type: %d\n", type);
+    gchar *str = webkit_dom_xpath_result_get_string_value(result, &error);
+    printf("STring: %s\n", str);
+    g_free(str);
 
-//        WebKitDOMCSSRuleList *rules = webkit_dom_style_sheet_get_css_rules(style_sheet);
-//        gulong rules_length = webkit_dom_css_rule_list_get_length(rules);
-//        for (gulong j = 0; j < style_sheet_length; ++j) {
-//            WebKitDOMCSSRule *rule = webkit_dom_css_rule_list_item(rules, j);
-//            printf("Rule %d = %p\n", (int) j, rule);
-//        }
+
+    while (1) {
+        WebKitDOMNode *node = webkit_dom_xpath_result_iterate_next(result, &error);
+        if (node == NULL) {
+            break;
+        }
+        printf("Node: %s\n", webkit_dom_element_get_attribute((WebKitDOMElement *) node, "href"));
     }
+
+
 }
 
 
