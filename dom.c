@@ -14,7 +14,7 @@ process_web_view (WebKitWebView *web_view) {
 
     GError *error;
     WebKitDOMXPathNSResolver *resolver = webkit_dom_document_create_ns_resolver(document, (WebKitDOMNode *) document);
-    WebKitDOMXPathResult *result = webkit_dom_document_evaluate(document, "//a", (WebKitDOMNode *) document, resolver, 0, NULL, &error);
+    WebKitDOMXPathResult *result = webkit_dom_document_evaluate(document, "//style", (WebKitDOMNode *) document, resolver, 0, NULL, &error);
     printf("XPath returned: %p\n", result);
 
 
@@ -30,7 +30,17 @@ process_web_view (WebKitWebView *web_view) {
         if (node == NULL) {
             break;
         }
-        printf("Node: %s\n", webkit_dom_element_get_attribute((WebKitDOMElement *) node, "href"));
+
+        printf("Object %s.href = %s\n",
+            G_OBJECT_TYPE_NAME(node),
+            webkit_dom_element_get_attribute((WebKitDOMElement *) node, "href")
+        );
+
+        WebKitDOMStyleSheet *sheet = webkit_dom_html_style_element_get_sheet((WebKitDOMHTMLStyleElement *) node);
+        printf("Sheet %s\n",
+            G_OBJECT_TYPE_NAME(sheet)
+        );
+
     }
 
 
