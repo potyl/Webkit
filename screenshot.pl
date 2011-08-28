@@ -28,13 +28,8 @@ use Data::Dumper;
 use Getopt::Long qw(:config auto_help);
 use Pod::Usage;
 
+use Gtk3;
 use Glib::Object::Introspection;
-
-Glib::Object::Introspection->setup(
-  basename => 'Gtk',
-  version  => '3.0',
-  package  => 'Gtk3'
-);
 
 Glib::Object::Introspection->setup(
   basename => 'WebKit',
@@ -53,7 +48,7 @@ my %TYPES = (
 );
 
 sub main {
-    Gtk3::init(0, []);
+    Gtk3::init();
 
     GetOptions(
         't|type=s' => \my $type,
