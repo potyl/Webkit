@@ -21,11 +21,7 @@ use warnings;
 
 
 use Glib::Object::Introspection;
-Glib::Object::Introspection->setup(
-  basename => 'Gtk',
-  version  => '3.0',
-  package  => 'Gtk3'
-);
+use Gtk3;
 
 Glib::Object::Introspection->setup(
   basename => 'WebKit',
@@ -39,7 +35,7 @@ sub main {
     my ($url) = @ARGV;
     $url ||= 'http://localhost:3001/';
 
-    Gtk3::init(0, []);
+    Gtk3::init();
     my $loop = Glib::MainLoop->new();
 
     my $view = WWW::WebKit::WebView->new();
