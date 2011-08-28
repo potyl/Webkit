@@ -3,7 +3,8 @@ WEBKIT=$(shell pkg-config --cflags --libs webkitgtk-3.0)
 CFLAGS=-std=c99
 
 .PHONY: all
-all: transparent download-cb screenshot dom
+all: transparent download-cb screenshot dom js
+
 
 .PHONY: run
 run: transparent
@@ -26,9 +27,14 @@ dom: dom.c
 	$(CC) $(CFLAGS) `pkg-config --cflags --libs webkitgtk-3.0` -o $@ $<
 
 
+js: js.c
+	$(CC) $(CFLAGS) `pkg-config --cflags --libs webkitgtk-3.0` -o $@ $<
+
+
 .PHONY: clean
 clean:
 	rm -f transparent
 	rm -f download-cb
 	rm -f screenshot
 	rm -f dom
+	rm -rf js

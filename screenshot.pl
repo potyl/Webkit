@@ -71,10 +71,6 @@ sub main {
     $view->signal_connect('notify::load-status' => sub {
         return unless $view->get_uri and ($view->get_load_status eq 'finished');
 
-        printf "mapped? %s\n", $view->get_mapped ? 'YES' : 'NO';
-        printf "visible? %s\n", $view->get_visible ? 'YES' : 'NO';
-        printf "sensitive? %s\n", $view->is_sensitive ? 'YES' : 'NO';
-
         # Sometimes the program dies with:
         #  (<unknown>:19092): Gtk-CRITICAL **: gtk_widget_draw: assertion `!widget->priv->alloc_needed' failed
         # This seem to happend is there's a newtwork error and we can't download
