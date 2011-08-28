@@ -58,7 +58,7 @@ sub tracker_cb {
     my ($session, $message, $socket, $resources) = @_;
     ++$TOTAL;
 
-    my $uri = $message->get_uri->to_string;
+    my $uri = $message->get_uri->to_string(FALSE);
     my $start = time;
     my $resource = $resources->{$uri} = {};
     $resource->{start} = time;
