@@ -38,13 +38,8 @@ use URI;
 use File::Basename qw(fileparse);
 use Cwd qw(abs_path);
 
+use Gtk3;
 use Glib::Object::Introspection;
-Glib::Object::Introspection->setup(
-  basename => 'Gtk',
-  version  => '3.0',
-  package  => 'Gtk3'
-);
-
 Glib::Object::Introspection->setup(
   basename => 'WebKit',
   version  => '3.0',
@@ -55,7 +50,7 @@ use Glib ':constants';
 
 
 sub main {
-    Gtk3::init(0, []);
+    Gtk3::init();
 
     my $do_steps = 1;
     GetOptions(
