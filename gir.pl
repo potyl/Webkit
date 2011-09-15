@@ -14,7 +14,7 @@ Glib::Object::Introspection->setup(
   version => '1.0',
   package => 'Gtk2::WebKit');
 
-Gtk2::init(0, []);
+Gtk2::init();
 
 my $view = Gtk2::WebKit::WebView->new;
 
