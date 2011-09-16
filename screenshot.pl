@@ -28,8 +28,9 @@ use Data::Dumper;
 use Getopt::Long qw(:config auto_help);
 use Pod::Usage;
 
-use Gtk3;
+use Glib ':constants';
 use Glib::Object::Introspection;
+use Gtk3;
 
 Glib::Object::Introspection->setup(
   basename => 'WebKit',
@@ -37,8 +38,6 @@ Glib::Object::Introspection->setup(
   package  => 'WebKit'
 );
 use Cairo::GObject;
-use constant TRUE  => 1;
-use constant FALSE => 0;
 
 my %TYPES = (
     svg => sub { save_as_vector('Cairo::SvgSurface', @_) },
