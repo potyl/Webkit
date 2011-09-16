@@ -23,9 +23,9 @@ Loads an URI and takes a screeshot once the page is rendered.
 use strict;
 use warnings;
 
-use Glib qw(TRUE FALSE);
+use Glib ':constants';
 use Gtk2 -init;
-use WWW::WebKit;
+use WWW::WebKit version => '1.0'; # Use the Gtk2 port of WebKit
 use Data::Dumper;
 
 
