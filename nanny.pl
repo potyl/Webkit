@@ -25,8 +25,8 @@ control implementation.
 use strict;
 use warnings;
 
-use Glib qw(TRUE FALSE);
-use Gtk2 -init;
+use Glib ':constants';
+use Gtk3 -init;
 use WWW::WebKit;
 use Getopt::Long qw(:config auto_help);
 use Pod::Usage;
@@ -42,9 +42,9 @@ sub main {
     $url ||= 'http://localhost:3001/';
     my $allowed_host_port = get_host_port($url);
 
-    my $window = Gtk2::Window->new('toplevel');
+    my $window = Gtk3::Window->new('toplevel');
     $window->set_default_size(800, 600);
-    $window->signal_connect(destroy => sub { Gtk2->main_quit() });
+    $window->signal_connect(destroy => sub { Gtk3->main_quit() });
 
     my $view = WWW::WebKit::WebView->new();
 
@@ -83,7 +83,7 @@ sub main {
     }
 
     # Pack the widgets together
-    my $scrolls = Gtk2::ScrolledWindow->new();
+    my $scrolls = Gtk3::ScrolledWindow->new();
     $scrolls->add($view);
 
     $window->add($scrolls);
@@ -91,7 +91,7 @@ sub main {
 
     $view->load_uri($url);
 
-    Gtk2->main;
+    Gtk3->main;
     return 0;
 }
 

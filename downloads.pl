@@ -19,10 +19,10 @@ Tracks all the downloads that are triggered for a starting page.
 use strict;
 use warnings;
 
-use Glib qw(TRUE FALSE);
-use Gtk2 -init;
-use HTTP::Soup;
+use Glib ':constants';
+use Gtk3 -init;
 use WWW::WebKit;
+use HTTP::Soup;
 use Data::Dumper;
 use Time::HiRes qw(time);
 
