@@ -19,7 +19,7 @@ Display a web page.
 use strict;
 use warnings;
 
-use Glib qw(TRUE FALSE);
+use Glib ':constants';
 use Gtk3 -init;
 use WWW::WebKit;
 use Data::Dumper;
