@@ -20,7 +20,7 @@ use strict;
 use warnings;
 
 use Glib qw(TRUE FALSE);
-use Gtk2 -init;
+use Gtk3 -init;
 use WWW::WebKit;
 use Data::Dumper;
 
@@ -29,15 +29,15 @@ sub main {
     my ($url) = @ARGV;
     $url ||= 'http://localhost:3001/';
 
-    my $window = Gtk2::Window->new('toplevel');
+    my $window = Gtk3::Window->new('toplevel');
     $window->set_default_size(800, 600);
-    $window->signal_connect(destroy => sub { Gtk2->main_quit() });
+    $window->signal_connect(destroy => sub { Gtk3->main_quit() });
 
 
     my $view = WWW::WebKit::WebView->new();
 
     # Pack the widgets together
-    my $scrolls = Gtk2::ScrolledWindow->new();
+    my $scrolls = Gtk3::ScrolledWindow->new();
     $scrolls->add($view);
 
 
@@ -46,7 +46,7 @@ sub main {
 
     $view->load_uri($url);
 
-    Gtk2->main;
+    Gtk3->main;
     return 0;
 }
 
