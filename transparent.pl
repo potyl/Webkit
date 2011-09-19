@@ -23,25 +23,30 @@ use strict;
 use warnings;
 
 use Glib ':constants';
-use Gtk2 -init;
-use WWW::WebKit version => '1.0'; # Use the Gtk2 port of WebKit
+use Gtk3 -init;
+use WWW::WebKit;
 use Data::Dumper;
+
+use Glib::Object::Introspection;
+Glib::Object::Introspection->setup(
+        basename => 'Gdk',
+        version  => '3.0',
+        package  => 'Gdk',
+);
 
 
 sub main {
     my ($url) = @ARGV;
     $url ||= 'http://localhost:3001/';
 
-    my $window = Gtk2::Window->new('toplevel');
+    my $window = Gtk3::Window->new('toplevel');
+
     my $screen = $window->get_screen;
-    my $rgba = $screen->get_rgba_colormap;
-    if ($rgba and $screen->is_composited) {
-        Gtk2::Widget->set_default_colormap($rgba);
-        $window->set_colormap($rgba);
-    }
+    # Set the main window transparent
+    $window->set_visual($screen->get_rgba_visual || $screen->get_system_visual);
 
     $window->set_default_size(800, 600);
-    $window->signal_connect(destroy => sub { Gtk2->main_quit() });
+    $window->signal_connect(destroy => sub { Gtk3->main_quit() });
     $window->set_decorated(FALSE);
 
     my $view = WWW::WebKit::WebView->new();
@@ -54,7 +59,7 @@ sub main {
     $view->load_uri($url);
     $view->grab_focus();
 
-    Gtk2->main;
+    Gtk3->main();
     return 0;
 }
 
