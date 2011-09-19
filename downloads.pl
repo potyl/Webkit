@@ -21,7 +21,7 @@ use warnings;
 
 use Glib ':constants';
 use Gtk3 -init;
-use WWW::WebKit;
+use Gtk3::WebKit;
 use HTTP::Soup;
 use Data::Dumper;
 use Time::HiRes qw(time);
@@ -36,11 +36,11 @@ sub main {
     my $loop = Glib::MainLoop->new();
 
     # Track all downloads
-    my $session = WWW::WebKit->get_default_session();
+    my $session = Gtk3::WebKit->get_default_session();
     my %resources;
     $session->signal_connect('request-started' => \&tracker_cb, \%resources);
 
-    my $view = WWW::WebKit::WebView->new();
+    my $view = Gtk3::WebKit::WebView->new();
 
     # Track once all downloads are finished
     $view->signal_connect('notify::load-status' => \&load_status_cb, [ $loop, \%resources ]);

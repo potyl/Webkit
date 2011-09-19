@@ -21,7 +21,7 @@ use warnings;
 
 use Glib ':constants';
 use Gtk3 -init;
-use WWW::WebKit;
+use Gtk3::WebKit;
 use Data::Dumper;
 
 
@@ -34,7 +34,7 @@ sub main {
     $window->signal_connect(destroy => sub { Gtk3->main_quit() });
 
 
-    my $view = WWW::WebKit::WebView->new();
+    my $view = Gtk3::WebKit::WebView->new();
 
     # Pack the widgets together
     my $scrolls = Gtk3::ScrolledWindow->new();

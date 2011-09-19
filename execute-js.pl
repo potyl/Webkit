@@ -21,7 +21,7 @@ use warnings;
 
 use Glib ':constants';
 use Gtk3 -init;
-use WWW::WebKit;
+use Gtk3::WebKit;
 use Cairo;
 use Data::Dumper;
 
@@ -36,7 +36,7 @@ sub main {
     $window->set_default_size(800, 600);
     $window->signal_connect(destroy => sub { Gtk3->main_quit() });
 
-    my $view = WWW::WebKit::WebView->new();
+    my $view = Gtk3::WebKit::WebView->new();
     my $button = Gtk3::Button->new("Execute");
     my $entry = Gtk3::Entry->new();
 

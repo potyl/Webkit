@@ -6,7 +6,7 @@ written in Perl using the introspection framework.
 
 They rely on these two other githup projects:
 
-    https://github.com/potyl/perl-WWW-WebKit
+    https://github.com/potyl/perl-Gtk3-WebKit
     https://github.com/potyl/perl-HTTP-Soup
 
 

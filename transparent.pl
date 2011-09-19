@@ -24,7 +24,7 @@ use warnings;
 
 use Glib ':constants';
 use Gtk3 -init;
-use WWW::WebKit;
+use Gtk3::WebKit;
 use Data::Dumper;
 
 use Glib::Object::Introspection;
@@ -49,7 +49,7 @@ sub main {
     $window->signal_connect(destroy => sub { Gtk3->main_quit() });
     $window->set_decorated(FALSE);
 
-    my $view = WWW::WebKit::WebView->new();
+    my $view = Gtk3::WebKit::WebView->new();
     $view->set_transparent(TRUE);
 
     # Pack the widgets together

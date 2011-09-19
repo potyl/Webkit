@@ -25,7 +25,7 @@ use warnings;
 
 use Glib ':constants';
 use Gtk2 -init;
-use WWW::WebKit version => '1.0'; # Use the Gtk2 port of WebKit
+use Gtk3::WebKit version => '1.0'; # Use the Gtk2 port of WebKit
 use Data::Dumper;
 
 
@@ -38,7 +38,7 @@ sub main {
     $window->set_default_size(800, 600);
     $window->signal_connect(destroy => sub { Gtk2->main_quit() });
 
-    my $view = WWW::WebKit::WebView->new();
+    my $view = Gtk3::WebKit::WebView->new();
 
     # Take a screenshot once all is loaded
     $view->signal_connect('notify::load-status' => \&load_status_cb, $file);
