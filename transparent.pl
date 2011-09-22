@@ -41,8 +41,8 @@ sub main {
 
     my $window = Gtk3::Window->new('toplevel');
 
-    my $screen = $window->get_screen;
     # Set the main window transparent
+    my $screen = $window->get_screen;
     $window->set_visual($screen->get_rgba_visual || $screen->get_system_visual);
 
     $window->set_default_size(800, 600);
