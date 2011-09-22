@@ -83,6 +83,12 @@ sub main {
 
 
     my $window = Gtk3::OffscreenWindow->new();
+
+    # Set the main window transparent
+    my $screen = $window->get_screen;
+    $window->set_visual($screen->get_rgba_visual || $screen->get_system_visual);
+    $view->set_transparent(TRUE);
+
     $window->add($view);
     $window->show_all();
 
