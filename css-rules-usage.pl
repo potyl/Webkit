@@ -32,7 +32,7 @@ use Pod::Usage;
 
 use Glib ':constants';
 use Gtk3;
-use Gtk3::WebKit search_path => '/usr/local/lib/girepository-1.0';
+use Gtk3::WebKit;# search_path => '/usr/local/lib/girepository-1.0';
 
 use CSS::DOM;
 
@@ -83,6 +83,28 @@ sub main {
 
 sub report_selectors_usage {
     my ($doc) = @_;
+my $resolver = $doc->create_ns_resolver($doc);
+print "Resolver: $resolver\n";
+
+#        const unsigned short ANY_TYPE                       = 0;
+#        const unsigned short NUMBER_TYPE                    = 1;
+#        const unsigned short STRING_TYPE                    = 2;
+#        const unsigned short BOOLEAN_TYPE                   = 3;
+#        const unsigned short UNORDERED_NODE_ITERATOR_TYPE   = 4;
+#        const unsigned short ORDERED_NODE_ITERATOR_TYPE     = 5;
+#        const unsigned short UNORDERED_NODE_SNAPSHOT_TYPE   = 6;
+#        const unsigned short ORDERED_NODE_SNAPSHOT_TYPE     = 7;
+#        const unsigned short ANY_UNORDERED_NODE_TYPE        = 8;
+#        const unsigned short FIRST_ORDERED_NODE_TYPE        = 9;
+
+my $res = $doc->evaluate('//*[name() = "style" or (name() = "p" and @id = "p1")]', $doc, $resolver, 7, undef);
+my $l = $res->get_snapshot_length;
+for (my $i = 0; $i < $l; ++$i) {
+    my $node = $res->snapshot_item($i);
+    print $node->get_tag_name, "\n";
+}
+
+return;
 
     # Get the RAW defition of the CSS (need to parse CSS text in order to extract the rules)
     my $styles = $doc->get_elements_by_tag_name('style');
