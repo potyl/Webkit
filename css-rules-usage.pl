@@ -33,10 +33,13 @@ use Pod::Usage;
 use Glib ':constants';
 use Gtk3;
 use Gtk3::WebKit search_path => '/usr/local/lib/girepository-1.0';
+use HTTP::Soup;
 
 use CSS::DOM;
+use URI;
 
 use constant DOM_TYPE_ELEMENT => 1;
+use constant ORDERED_NODE_SNAPSHOT_TYPE => 7;
 
 
 my $DEBUG = 0;
@@ -56,6 +59,37 @@ sub main {
     $url ||= 'http://localhost:3001/';
 
     my $view = Gtk3::WebKit::WebView->new();
+
+    my $session = Gtk3::WebKit->get_default_session();
+    my %resources;
+    $session->signal_connect('request-started' => sub {
+        my ($session, $message, $socket) = @_;
+        my $uri = $message->get_uri->to_string(FALSE);
+        $resources{$uri} = "";
+        $message->signal_connect("finished" => sub {
+            my ($message) = @_;
+            # response-headers->get_content_type({}) issues a warning about: Use of uninitialized value in subroutine entry
+            #my ($content_type) = $message->get('response-headers')->get_content_type({}) || '';
+            my $content_type = $message->get('response-headers')->get_one('content-type') || '';
+            $content_type =~ s/\s*;.*$//;
+            delete $resources{$uri} if $content_type ne 'text/css';
+        });
+
+        # NOTE ideally calling $message->get('reponse-body')->data in the
+        # 'finished' signal would get us the data, but the body is always of
+        # length 0! Maybe another 'finished' signal truncates the body?
+        #
+        # In order to get the content we need accumulate the chunks by hand.
+
+        # TODO detect the mime-type based on the headers and skip the chunking
+        # of mime-types that are not text/css.
+        $message->signal_connect('got-chunk' => sub {
+            my ($message, $chunk) = @_;
+            $resources{$uri} .= $chunk->data;
+        });
+    });
+
+
     $view->signal_connect('notify::load-status' => sub {
         return unless $view->get_uri and ($view->get_load_status eq 'finished');
         print "Document loaded\n";
@@ -67,7 +101,7 @@ sub main {
             close $handle;
         }
 
-        report_selectors_usage($view->get_dom_document);
+        report_selectors_usage($view->get_dom_document, \%resources);
         Gtk3->main_quit();
     });
     $view->load_uri($url);
@@ -82,32 +116,53 @@ sub main {
 
 
 sub report_selectors_usage {
-    my ($doc) = @_;
+    my ($doc, $resources) = @_;
 
     # Get the RAW defition of the CSS (need to parse CSS text in order to extract the rules)
-    my $styles = $doc->get_elements_by_tag_name('style');
-    # FIXME get the rules from the <link type="text/css" rel="stylsheet">
     my %selectors;
-    my $length = $styles->get_length;
-    printf "Found $length style elements\n";
+    my $resolver = $doc->create_ns_resolver($doc);
+    my $xpath_results = $doc->evaluate('//style | //link[@rel = "stylesheet" and @type="text/css" and @href]', $doc, $resolver, ORDERED_NODE_SNAPSHOT_TYPE, undef);
+    my $length = $xpath_results->get_snapshot_length;
     for (my $i = 0; $i < $length; ++$i) {
-        my $css_content = $styles->item($i)->get_first_child->get_text_content;
+        my $element = $xpath_results->snapshot_item($i);
+
+        my $css_content;
+        if ($element->get_tag_name eq 'STYLE') {
+            $css_content = $element->get_first_child->get_text_content;
+        }
+        else {
+            my $href = $element->get_attribute('href');
+            my $url = URI->new_abs($href, $doc->get('url'))->as_string;
+            $css_content = $resources->{$url};
+            if (!$css_content) {
+                print "*** Missing content for $url\n";
+                print Dumper([ keys %$resources ]);
+                next;
+            }
+        }
+
         my $css = CSS::DOM::parse($css_content);
         my $rules = 0;
         foreach my $rule ($css->cssRules) {
             ++$rules;
-            foreach my $selectorText (split /\s*,\s*/, $rule->selectorText) {
-                $selectors{$selectorText} = {
-                    count    => 0,
-                    selector => $selectorText,
-                    rule     => $rule,
-                };
+            if ($rule->isa('CSS::DOM::Rule') {
+                foreach my $selectorText (split /\s*,\s*/, $rule->selectorText) {
+                    $selectors{$selectorText} = {
+                        count    => 0,
+                        selector => $selectorText,
+                        rule     => $rule,
+                    };
+                }
+            }
+            else {
+                #FIXME implement other rules (@media, @import)
+                print "Skipping CSS entry $rule\n";
+                next;
             }
         }
         print "Loaded $rules rules\n";
     }
     printf "Found %d selectors\n", scalar(keys %selectors);
-
     walk_dom($doc->get_body, \%selectors);
 
     my @selectors = sort {
