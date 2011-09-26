@@ -145,7 +145,7 @@ sub report_selectors_usage {
         my $rules = 0;
         foreach my $rule ($css->cssRules) {
             ++$rules;
-            if ($rule->isa('CSS::DOM::Rule') {
+            if ($rule->isa('CSS::DOM::Rule')) {
                 foreach my $selectorText (split /\s*,\s*/, $rule->selectorText) {
                     $selectors{$selectorText} = {
                         count    => 0,
