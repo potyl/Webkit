@@ -11,6 +11,7 @@ dom.pl [OPTION]... [URI]
     -d, --debug            turn on debug mode
     -v, --verbose          turn on verbose mode
         --exit             quit with exit instead of stopping the main loop
+        --guess            guess the file type by looking at the url's extension
     -h, --help             print this help message
 
 Simple usage:
@@ -55,6 +56,7 @@ sub main {
         'debug|d'   => \$DEBUG,
         'verbose|v' => \$VERBOSE,
         'exit'      => \my $do_exit,
+        'guess'     => \my $guess,
     ) or podusage(1);
 
     my ($url) = @ARGV;
@@ -90,6 +92,13 @@ sub main {
             $resources{$uri} .= $chunk->data;
         });
     });
+
+    # Try to guess what to download by looking at thet url's extension
+    $view->signal_connect("resource-request-starting" => sub {
+        my ($view, $frame, $resource, $request, $response) = @_;
+        my $uri = $request->get_uri;
+        $request->set_uri('about:blank') unless $uri !~ m,(\.js|\.css|\.html?|/)$,;
+    }) if $guess;
 
 
     $view->signal_connect('notify::load-status' => sub {
