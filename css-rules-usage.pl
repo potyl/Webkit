@@ -10,6 +10,7 @@ dom.pl [OPTION]... [URI]
 
     -d, --debug            turn on debug mode
     -v, --verbose          turn on verbose mode
+        --exit             quit with exit instead of stopping the main loop
     -h, --help             print this help message
 
 Simple usage:
@@ -53,6 +54,7 @@ sub main {
         'save|s'    => \my $save,
         'debug|d'   => \$DEBUG,
         'verbose|v' => \$VERBOSE,
+        'exit'      => \my $do_exit,
     ) or podusage(1);
 
     my ($url) = @ARGV;
@@ -102,7 +104,13 @@ sub main {
         }
 
         report_selectors_usage($view->get_dom_document, \%resources);
-        Gtk3->main_quit();
+        if ($do_exit) {
+            # Prevents the seg fault at the cleanup in an unstable WebKit version
+            exit 0;
+        }
+        else {
+            Gtk3->main_quit();
+        }
     });
     $view->load_uri($url);
 
