@@ -166,7 +166,7 @@ sub report_selectors_usage {
     my $unused = 0;
     foreach my $selector (@selectors) {
         my $count = $selector->{count};
-        printf "Selector %s is used %d times\n", $selector->{selector}, $count if $VERBOSE or $count == 0;
+        printf "Selector %s matches %d elements\n", $selector->{selector}, $count if $VERBOSE or $count == 0;
         ++$unused if $count == 0;
     }
     print "Found $unused unused selectors\n";
