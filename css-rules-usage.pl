@@ -231,17 +231,10 @@ sub parse_css_rules {
     foreach my $rule ($css->cssRules) {
         ++$rules;
         if ($rule->isa('CSS::DOM::Rule::Import')) {
-            my $url = URI->new_abs($rule->href, $base_url)->as_string;
-            printf "\@import  %s\n", $url;
-            my ($css_import_content, $css_import_url) = get_content($rule->href, $base_url, $resources);
-            if ($css_import_content) {
-                print "Got content for $css_import_url\n";
-                print "CONTENT:$css_import_content\n";
-                parse_css_rules($css_import_content, $css_import_url, $resources, $selectors);
-            }
-            else {
-                print "Can't find $css_import_url!\n";
-            }
+            my $href = $rule->href;
+            print "\@import $href\n" if $VERBOSE;
+            my ($content, $url) = get_content($href, $base_url, $resources) or next;
+            parse_css_rules($content, $url, $resources, $selectors);
         }
         elsif ($rule->isa('CSS::DOM::Rule')) {
             foreach my $selectorText (split /\s*,\s*/, $rule->selectorText) {
