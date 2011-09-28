@@ -249,6 +249,7 @@ sub parse_css_rules {
                     count    => 0,
                     selector => $selectorText,
                     rule     => $rule,
+                    url      => $base_url,
                 };
             }
         }
