@@ -39,6 +39,7 @@ use HTTP::Soup;
 
 use CSS::DOM;
 use URI;
+use POSIX qw(_exit);
 
 use constant DOM_TYPE_ELEMENT => 1;
 use constant ORDERED_NODE_SNAPSHOT_TYPE => 7;
@@ -66,17 +67,28 @@ sub main {
 
     my $session = Gtk3::WebKit->get_default_session();
     my %resources;
+    my $requests_started = 0;
+    my $requests_finished = 0;
     $session->signal_connect('request-started' => sub {
         my ($session, $message, $socket) = @_;
+        ++$requests_started;
+
         my $uri = $message->get_uri->to_string(FALSE);
         $resources{$uri} = "";
+
         $message->signal_connect("finished" => sub {
             my ($message) = @_;
+            ++$requests_finished;
+
             # response-headers->get_content_type({}) issues a warning about: Use of uninitialized value in subroutine entry
             #my ($content_type) = $message->get('response-headers')->get_content_type({}) || '';
             my $content_type = $message->get('response-headers')->get_one('content-type') || '';
             $content_type =~ s/\s*;.*$//;
-            delete $resources{$uri} if $content_type ne 'text/css';
+            if ($content_type ne 'text/css') {
+                print "Deleting $uri\n";
+                delete $resources{$uri};
+            }
+            print "content_type = $content_type; uri: $uri\n";
         });
 
         # NOTE ideally calling $message->get('reponse-body')->data in the
@@ -103,23 +115,28 @@ sub main {
 
     $view->signal_connect('notify::load-status' => sub {
         return unless $view->get_uri and ($view->get_load_status eq 'finished');
-        print "Document loaded\n";
+        Glib::Idle->add(sub {
+            # Wait until all CSS files are loaded
+            return 1 unless $requests_started and $requests_started == $requests_finished;
 
-        if ($save) {
-            my $file = 'page.html';
-            open my $handle, '>:encoding(UTF-8)', $file or die "Can't write to $file: $!";
-            print $handle $view->get_focused_frame->get_data_source->get_data->{str};
-            close $handle;
-        }
+            print "All resources are loaded ($requests_started/$requests_finished)\n";
+            if ($save) {
+                my $file = 'page.html';
+                open my $handle, '>:encoding(UTF-8)', $file or die "Can't write to $file: $!";
+                print $handle $view->get_focused_frame->get_data_source->get_data->{str};
+                close $handle;
+            }
 
-        report_selectors_usage($view->get_dom_document, \%resources);
-        if ($do_exit) {
-            # Prevents the seg fault at the cleanup in an unstable WebKit version
-            exit 0;
-        }
-        else {
-            Gtk3->main_quit();
-        }
+            report_selectors_usage($view->get_dom_document, \%resources);
+            if ($do_exit) {
+                # Prevents the seg fault at the cleanup in an unstable WebKit version
+                _exit(0);
+            }
+            else {
+                Gtk3->main_quit();
+            }
+        }) ;
+
     });
     $view->load_uri($url);
 
@@ -136,56 +153,15 @@ sub report_selectors_usage {
     my ($doc, $resources) = @_;
 
     # Get the RAW defition of the CSS (need to parse CSS text in order to extract the rules)
-    my %selectors;
-    my $resolver = $doc->create_ns_resolver($doc);
-    my $xpath_results = $doc->evaluate('//style | //link[@rel = "stylesheet" and @type="text/css" and @href]', $doc, $resolver, ORDERED_NODE_SNAPSHOT_TYPE, undef);
-    my $length = $xpath_results->get_snapshot_length;
-    for (my $i = 0; $i < $length; ++$i) {
-        my $element = $xpath_results->snapshot_item($i);
+    my $selectors = get_css_rules($doc, $resources);
 
-        my $css_content;
-        if ($element->get_tag_name eq 'STYLE') {
-            $css_content = $element->get_first_child->get_text_content;
-        }
-        else {
-            my $href = $element->get_attribute('href');
-            my $url = URI->new_abs($href, $doc->get('url'))->as_string;
-            $css_content = $resources->{$url};
-            if (!$css_content) {
-                print "*** Missing content for $url\n";
-                print Dumper([ keys %$resources ]);
-                next;
-            }
-        }
-
-        my $css = CSS::DOM::parse($css_content);
-        my $rules = 0;
-        foreach my $rule ($css->cssRules) {
-            ++$rules;
-            if ($rule->isa('CSS::DOM::Rule')) {
-                foreach my $selectorText (split /\s*,\s*/, $rule->selectorText) {
-                    $selectors{$selectorText} = {
-                        count    => 0,
-                        selector => $selectorText,
-                        rule     => $rule,
-                    };
-                }
-            }
-            else {
-                #FIXME implement other rules (@media, @import)
-                print "Skipping CSS entry $rule\n";
-                next;
-            }
-        }
-        print "Loaded $rules rules\n";
-    }
-    printf "Found %d selectors\n", scalar(keys %selectors);
-    walk_dom($doc->get_body, \%selectors);
+    printf "Found %d selectors\n", scalar(keys %$selectors);
+    walk_dom($doc->get_body, $selectors);
 
     my @selectors = sort {
            $b->{count} <=> $a->{count}
         || $a->{selector} cmp $b->{selector}
-    } values %selectors;
+    } values %$selectors;
 
     my $unused = 0;
     foreach my $selector (@selectors) {
@@ -213,6 +189,88 @@ sub walk_dom {
         my $child = $child_nodes->item($i);
         walk_dom($child, $selectors);
     }
+}
+
+
+sub get_css_rules {
+    my ($doc, $resources) = @_;
+
+    my %selectors;
+
+    # Get the RAW defition of the CSS (need to parse CSS text in order to extract the rules)
+    my $resolver = $doc->create_ns_resolver($doc);
+    my $xpath_results = $doc->evaluate('//style | //link[@rel = "stylesheet" and @type="text/css" and @href]', $doc, $resolver, ORDERED_NODE_SNAPSHOT_TYPE, undef);
+    my $length = $xpath_results->get_snapshot_length;
+    my $doc_url = $doc->get_document_uri;
+    for (my $i = 0; $i < $length; ++$i) {
+        my $element = $xpath_results->snapshot_item($i);
+
+        my $css_content;
+        my $base_url;
+        if ($element->get_tag_name eq 'STYLE') {
+            $base_url = $doc_url;
+            $css_content = $element->get_first_child->get_text_content;
+        }
+        else {
+            # <link rel="stylesheet" type="text/css" href="">
+            my $href = $element->get_attribute('href');
+            ($css_content, $base_url) = get_content($href, $doc_url, $resources) or next;
+        }
+
+        parse_css_rules($css_content, $base_url, $resources, \%selectors);
+    }
+
+    return \%selectors;
+}
+
+
+sub parse_css_rules {
+    my ($css_content, $base_url, $resources, $selectors) = @_;
+    my $css = CSS::DOM::parse($css_content);
+    my $rules = 0;
+    foreach my $rule ($css->cssRules) {
+        ++$rules;
+        if ($rule->isa('CSS::DOM::Rule::Import')) {
+            my $url = URI->new_abs($rule->href, $base_url)->as_string;
+            printf "\@import  %s\n", $url;
+            my ($css_import_content, $css_import_url) = get_content($rule->href, $base_url, $resources);
+            if ($css_import_content) {
+                print "Got content for $css_import_url\n";
+                print "CONTENT:$css_import_content\n";
+                parse_css_rules($css_import_content, $css_import_url, $resources, $selectors);
+            }
+            else {
+                print "Can't find $css_import_url!\n";
+            }
+        }
+        elsif ($rule->isa('CSS::DOM::Rule')) {
+            foreach my $selectorText (split /\s*,\s*/, $rule->selectorText) {
+                $selectors->{$selectorText} = {
+                    count    => 0,
+                    selector => $selectorText,
+                    rule     => $rule,
+                };
+            }
+        }
+        else {
+            #FIXME implement other rules (@media)
+            print "Skipping CSS entry $rule\n";
+            next;
+        }
+    }
+    print "Loaded $rules rules from $base_url\n";
+}
+
+
+sub get_content {
+    my ($url, $base_url, $resources) = @_;
+    my $full_url = URI->new_abs($url, $base_url)->as_string;
+    my $content = $resources->{$full_url};
+    if (!$content) {
+        print "*** Missing content for $full_url\n";
+        print "Available content: ", Dumper([ keys %$resources ]);
+    }
+    return ($content, $full_url);
 }
 
 
