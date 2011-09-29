@@ -138,7 +138,11 @@ sub report_selectors_usage {
     my $unused = 0;
     foreach my $selector (@selectors) {
         my $count = $selector->{count};
-        printf "Selector %s matches %d elements\n", $selector->{selector}, $count if $VERBOSE or $count == 0;
+        printf "Selector %s matches %d elements (%s)\n",
+            $selector->{selector},
+            $count,
+            $selector->{url},
+            if $VERBOSE or $count == 0;
         ++$unused if $count == 0;
     }
     print "Found $unused unused selectors\n";
@@ -204,9 +208,12 @@ sub parse_css_rules {
         ++$rules;
         if ($rule->isa('CSS::DOM::Rule::Import')) {
             my $href = $rule->href;
-            print "\@import $href\n" if $VERBOSE;
+            print "\@import $href at $base_url\n" if $VERBOSE;
             my ($content, $url) = get_content($href, $base_url, $resources) or next;
             parse_css_rules($content, $url, $resources, $selectors);
+        }
+        elsif ($rule->isa('CSS::DOM::Rule::Media')) {
+            printf "Skipping '\@media %s at $base_url\n", $rule->media;
         }
         elsif ($rule->isa('CSS::DOM::Rule')) {
             foreach my $selectorText (split /\s*,\s*/, $rule->selectorText) {
