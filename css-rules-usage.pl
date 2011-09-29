@@ -66,42 +66,14 @@ sub main {
     my $view = Gtk3::WebKit::WebView->new();
 
     my $session = Gtk3::WebKit->get_default_session();
-    my %resources;
     my $requests_started = 0;
     my $requests_finished = 0;
     $session->signal_connect('request-started' => sub {
         my ($session, $message, $socket) = @_;
         ++$requests_started;
-
-        my $uri = $message->get_uri->to_string(FALSE);
-        $resources{$uri} = "";
-
         $message->signal_connect("finished" => sub {
             my ($message) = @_;
             ++$requests_finished;
-
-            # response-headers->get_content_type({}) issues a warning about: Use of uninitialized value in subroutine entry
-            #my ($content_type) = $message->get('response-headers')->get_content_type({}) || '';
-            my $content_type = $message->get('response-headers')->get_one('content-type') || '';
-            $content_type =~ s/\s*;.*$//;
-            if ($content_type ne 'text/css') {
-                print "Deleting $uri\n";
-                delete $resources{$uri};
-            }
-            print "content_type = $content_type; uri: $uri\n";
-        });
-
-        # NOTE ideally calling $message->get('reponse-body')->data in the
-        # 'finished' signal would get us the data, but the body is always of
-        # length 0! Maybe another 'finished' signal truncates the body?
-        #
-        # In order to get the content we need accumulate the chunks by hand.
-
-        # TODO detect the mime-type based on the headers and skip the chunking
-        # of mime-types that are not text/css.
-        $message->signal_connect('got-chunk' => sub {
-            my ($message, $chunk) = @_;
-            $resources{$uri} .= $chunk->data;
         });
     });
 
@@ -118,8 +90,16 @@ sub main {
         Glib::Idle->add(sub {
             # Wait until all CSS files are loaded
             return 1 unless $requests_started and $requests_started == $requests_finished;
-
             print "All resources are loaded ($requests_started/$requests_finished)\n";
+
+            my $list = $view->get_focused_frame->get_data_source->get_subresources;
+            my %resources;
+            foreach my $resource (@$list) {
+                my $data = $resource->get_data or next;
+                my $uri = $resource->get_uri or next;
+                $resources{$uri} = $data->{str};
+            }
+
             if ($save) {
                 my $file = 'page.html';
                 open my $handle, '>:encoding(UTF-8)', $file or die "Can't write to $file: $!";
