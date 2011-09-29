@@ -53,7 +53,7 @@ sub main {
     Gtk3::init();
 
     GetOptions(
-        'save|s'    => \my $save,
+        'save|s=s'  => \my $save,
         'debug|d'   => \$DEBUG,
         'verbose|v' => \$VERBOSE,
         'exit'      => \my $do_exit,
@@ -92,8 +92,8 @@ sub main {
                 $resources{$uri} = $data->{str};
             }
 
-            if ($save) {
-                my $file = 'page.html';
+            if (defined $save) {
+                my $file = $save;
                 open my $handle, '>:encoding(UTF-8)', $file or die "Can't write to $file: $!";
                 print $handle $view->get_focused_frame->get_data_source->get_data->{str};
                 close $handle;
