@@ -40,6 +40,7 @@ use HTTP::Soup;
 use CSS::DOM;
 use URI;
 use POSIX qw(_exit);
+use Time::HiRes qw(time);
 
 use constant DOM_TYPE_ELEMENT => 1;
 use constant ORDERED_NODE_SNAPSHOT_TYPE => 7;
@@ -76,13 +77,13 @@ sub main {
         });
     });
 
-
+    my $start;
     $view->signal_connect('notify::load-status' => sub {
         return unless $view->get_uri and ($view->get_load_status eq 'finished');
         Glib::Idle->add(sub {
             # Wait until all CSS files are loaded
             return 1 unless $requests_started and $requests_started == $requests_finished;
-            print "All resources are loaded ($requests_started/$requests_finished)\n";
+            printf "All resources loaded ($requests_started/$requests_finished) in %0.2fs\n", (time() - $start);
 
             my $list = $view->get_focused_frame->get_data_source->get_subresources;
             my %resources;
@@ -99,7 +100,9 @@ sub main {
                 close $handle;
             }
 
+            my $now = time();
             report_selectors_usage($view->get_dom_document, \%resources);
+            printf "Document processed in %0.2fs\n", (time() - $now);
             if ($do_exit) {
                 # Prevents the seg fault at the cleanup in an unstable WebKit version
                 _exit(0);
@@ -116,6 +119,7 @@ sub main {
     $window->add($view);
     $window->show_all();
 
+    $start = time();
     Gtk3->main();
     return 0;
 }
@@ -125,10 +129,13 @@ sub report_selectors_usage {
     my ($doc, $resources) = @_;
 
     # Get the RAW defition of the CSS (need to parse CSS text in order to extract the rules)
+    my $start = time();
     my $selectors = get_css_rules($doc, $resources);
+    printf "Found %d selectors in %.2fs\n", scalar(keys %$selectors), time() - $start;
 
-    printf "Found %d selectors\n", scalar(keys %$selectors);
-    walk_dom($doc->get_body, $selectors);
+    $start = time();
+    my $count = walk_dom($doc->get_body, $selectors);
+    printf "Traversed %d DOM elements in %.2fs\n", $count, time() - $start;
 
     my @selectors = sort {
            $b->{count} <=> $a->{count}
@@ -160,11 +167,14 @@ sub walk_dom {
         }
     }
 
+    my $count = 1;
     my $child_nodes = $node->get_child_nodes;
     for (my ($i, $l) = (0, $child_nodes->get_length); $i < $l; ++$i) {
         my $child = $child_nodes->item($i);
-        walk_dom($child, $selectors);
+        $count += walk_dom($child, $selectors);
     }
+
+    return $count;
 }
 
 
