@@ -8,6 +8,7 @@ css-rules-usage.pl - Reports the usage of CSS rules
 
 dom.pl [OPTION]... [URI]
 
+    -t, --trace            turn on trace mode
     -d, --debug            turn on debug mode
     -v, --verbose          turn on verbose mode
         --exit             quit with exit instead of stopping the main loop
@@ -46,6 +47,7 @@ use constant DOM_TYPE_ELEMENT => 1;
 use constant ORDERED_NODE_SNAPSHOT_TYPE => 7;
 
 
+my $TRACE = 0;
 my $DEBUG = 0;
 my $VERBOSE = 0;
 
@@ -55,6 +57,7 @@ sub main {
 
     GetOptions(
         'save|s=s'  => \my $save,
+        'trace|t'   => \$TRACE,
         'debug|d'   => \$DEBUG,
         'verbose|v' => \$VERBOSE,
         'exit'      => \my $do_exit,
@@ -149,7 +152,7 @@ sub report_selectors_usage {
             $selector->{selector},
             $count,
             $selector->{url},
-            if $VERBOSE or $count == 0;
+            if ($VERBOSE and $count == 0) or $DEBUG;
         ++$unused if $count == 0;
     }
     print "Found $unused unused selectors\n";
@@ -163,7 +166,7 @@ sub walk_dom {
         foreach my $selector (keys %$selectors) {
             my $matches = $node->webkit_matches_selector($selector);
             ++$selectors->{$selector}{count} if $matches;
-            printf "Element %s matches %s? %s\n", $node->get_tag_name, $selector, $matches ? 'TRUE' : 'FALSE' if $DEBUG;
+            printf "Element %s matches %s? %s\n", $node->get_tag_name, $selector, $matches ? 'TRUE' : 'FALSE' if $TRACE;
         }
     }
 
