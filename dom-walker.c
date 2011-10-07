@@ -30,6 +30,9 @@ walk_dom (WebKitDOMNode *node);
 static void
 load_status_cb (GObject* object, GParamSpec* pspec, gpointer data);
 
+static gboolean
+console_message_cb (gchar *message, gint line, gchar *source_id);
+
 
 static gulong
 walk_dom (WebKitDOMNode *node) {
@@ -78,6 +81,12 @@ load_status_cb (GObject* object, GParamSpec* pspec, gpointer data) {
 }
 
 
+static gboolean
+console_message_cb (gchar *message, gint line, gchar *source_id) {
+    return TRUE;
+}
+
+
 int
 main (int argc, char* argv[]) {
     const char *uri;
@@ -97,6 +106,7 @@ main (int argc, char* argv[]) {
     web_view = WEBKIT_WEB_VIEW(webkit_web_view_new());
     g_object_ref_sink(G_OBJECT(web_view));
     g_signal_connect(web_view, "notify::load-status", G_CALLBACK(load_status_cb), &ctx);
+    g_signal_connect(web_view, "console-message", G_CALLBACK(console_message_cb), NULL);
     webkit_web_view_load_uri(web_view, uri);
 
     ctx.loop = g_main_loop_new(NULL, TRUE);
