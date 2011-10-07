@@ -114,8 +114,11 @@ sub main {
                 Gtk3->main_quit();
             }
         }) ;
-
     });
+
+    # Hide JavaScript console messages
+    $view->signal_connect('console-message' => sub { return TRUE; });
+
     $view->load_uri($url);
 
     my $window = Gtk3::OffscreenWindow->new();
