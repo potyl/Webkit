@@ -25,6 +25,7 @@ screenshot         - save a screenshot as a PDF
 s5pdf              - save a S5 presentation in PDF
 css-rules-usage.pl - list css rules and their usage
 dom-walker         - walk the DOM tree
+js                 - get the page's title through JavaScript
 
 
 How to Build
