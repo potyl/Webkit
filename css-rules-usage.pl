@@ -35,7 +35,7 @@ use Pod::Usage;
 
 use Glib ':constants';
 use Gtk3;
-use Gtk3::WebKit search_path => '/usr/local/lib/girepository-1.0';
+use Gtk3::WebKit;
 use HTTP::Soup;
 
 use CSS::DOM;
