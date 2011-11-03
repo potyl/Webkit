@@ -51,7 +51,7 @@ sub main {
 
     GetOptions(
         't|type=s' => \my $type,
-    ) or podusage(1);
+    ) or pod2usage(1);
 
     if ($type) {
         $type = lc $type;

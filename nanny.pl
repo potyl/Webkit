@@ -37,7 +37,7 @@ use URI;
 sub main {
     GetOptions(
         's|super' => \my $super,
-    ) or podusage(1);
+    ) or pod2usage(1);
     my ($url) = @ARGV;
     $url ||= 'http://localhost:3001/';
     my $allowed_host_port = get_host_port($url);

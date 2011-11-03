@@ -61,7 +61,7 @@ sub main {
         'debug|d'   => \$DEBUG,
         'verbose|v' => \$VERBOSE,
         'exit'      => \my $do_exit,
-    ) or podusage(1);
+    ) or pod2usage(1);
 
     my ($url) = @ARGV;
     $url ||= 'http://localhost:3001/';
