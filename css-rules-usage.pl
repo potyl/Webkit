@@ -191,7 +191,13 @@ sub get_css_rules {
 
     # Get the RAW defition of the CSS (need to parse CSS text in order to extract the rules)
     my $resolver = $doc->create_ns_resolver($doc);
-    my $xpath_results = $doc->evaluate('//style | //link[@rel = "stylesheet" and @type="text/css" and @href]', $doc, $resolver, ORDERED_NODE_SNAPSHOT_TYPE, undef);
+    my $xpath_results = $doc->evaluate(
+        '//style | //link[@rel = "stylesheet" and @type="text/css" and @href]',
+        $doc,
+        $resolver,
+        ORDERED_NODE_SNAPSHOT_TYPE,
+        undef,
+    );
     my $length = $xpath_results->get_snapshot_length;
     my $doc_url = $doc->get_document_uri;
     for (my $i = 0; $i < $length; ++$i) {
