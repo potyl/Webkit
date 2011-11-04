@@ -12,7 +12,7 @@ s5pdf [OPTION]... URI [FILE]
     -v,        --verbose        enable verbose mode
     -w WIDTH,  --width WIDHT    the width of the slides in pixels
     -h HEIGHT, --height HEIGHT  the height of the slides in pixels
-    -S,        --no-steps       rendender only full slides (skip the steps)
+    -S,        --no-steps       render only full slides (skip the steps)
     -z LEVEL,  --zoom LEVEL     zoom level (negative values zoom out, positive zoom in)
     -p MS,     --pause MS       number of milliseconds to wait before taking a screenshot
     -h,        --help           print this help message
