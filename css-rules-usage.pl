@@ -91,9 +91,10 @@ sub main {
             my $list = $view->get_focused_frame->get_data_source->get_subresources;
             my %resources;
             foreach my $resource (@$list) {
-                my $data = $resource->get_data or next;
+                my $data = $resource->get_data;
+                next unless defined $data;
                 my $uri = $resource->get_uri or next;
-                $resources{$uri} = $data->{str};
+                $resources{$uri} = $data;
             }
 
             if (defined $save) {
