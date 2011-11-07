@@ -70,10 +70,6 @@ sub tracker_cb {
         #printf "Downloaded %s in %.2f seconds; code: %s\n", $uri, $elapsed, $status_code;
     });
 
-#    $message->signal_connect('got-chunk' => sub {
-#        print "Chunk @_\n";
-#    });
-
     return;
 }
 
