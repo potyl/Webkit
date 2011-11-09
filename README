@@ -35,12 +35,15 @@ This was tested on a brand new VM running Ubuntu 11.04. These intructions are
 not very clean. They serve more as a reminder.
 
 sudo apt-get install libextutils-depends-perl libextutils-pkgconfig-perl gobject-introspection libgirepository1.0-dev
-wget http://cpan.metacpan.org/authors/id/T/TS/TSCH/Glib-Object-Introspection-0.001.tar.gz
 sudo apt-get install libwebkitgtk-3.0-dev libwebkitgtk-3.0-0-dbg
-git clone git://git.gnome.org/perl-Glib-Object-Introspection
-git clone git://git.gnome.org/perl-Gtk3
-wget http://search.cpan.org/CPAN/authors/id/M/MI/MIYAGAWA/App-cpanminus-1.4008.tar.gz
-dzil authordeps | sudo cpanm
 sudo apt-get install gir1.2-gtk-3.0 gir1.2-webkit-3.0 gir1.2-soup-2.4
-wget http://cpan.metacpan.org/authors/id/T/TS/TSCH/Cairo-GObject-1.000.tar.gz
-perl Makefile.PL && make && perl -Mblib t/CairoGObject.t && sudo make install
+
+Install from CPAN:
+
+    Glib::Object::Introspection
+    Cairo::GObject
+    Gtk3
+    Gtk3::WebKit
+    HTTP::Soup
+
+For better success use a recent version of WebKitGTK.
