@@ -13,20 +13,20 @@ They rely on these two other githup projects:
 Contents
 --------
 
-webkit.pl          - display a web page
-transparent.pl     - load a page in a transparent window
-screenshot-png.pl  - take a screenshot as PNG
-screenshot.pl      - take a screenshot as various formats
-downloads.pl       - track the downloads for one page
-execute-js.pl      - execute javascript on a page
-nanny.pl           - very simple parental control
-git.pl             - display a web page using GIR
-screenshot         - save a screenshot as a PDF
-s5pdf              - save a S5 presentation in PDF
-css-rules-usage.pl - list css rules and their usage
-dom-walker         - walk the DOM tree
-js                 - get the page's title through JavaScript
-
+webkit.pl           - display a web page
+transparent.pl      - load a page in a transparent window
+screenshot-png.pl   - take a screenshot as PNG
+screenshot.pl       - take a screenshot as various formats
+downloads.pl        - track the downloads for one page
+execute-js.pl       - execute javascript on a page
+nanny.pl            - very simple parental control
+git.pl              - display a web page using GIR
+screenshot          - save a screenshot as a PDF
+s5pdf               - save a S5 presentation in PDF
+css-rules-usage.p l - list css rules and their usage
+dom-walker          - walk the DOM tree
+js                  - get the page's title through JavaScript
+screenshot-xpath.pl - take a screenshot of a single element
 
 How to Build
 ------------
