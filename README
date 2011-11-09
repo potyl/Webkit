@@ -32,7 +32,7 @@ How to Build
 ------------
 
 This was tested on a brand new VM running Ubuntu 11.04. These intructions are
-not very clean. They seve more as a reminder.
+not very clean. They serve more as a reminder.
 
 sudo apt-get install libextutils-depends-perl libextutils-pkgconfig-perl gobject-introspection libgirepository1.0-dev
 wget http://cpan.metacpan.org/authors/id/T/TS/TSCH/Glib-Object-Introspection-0.001.tar.gz
