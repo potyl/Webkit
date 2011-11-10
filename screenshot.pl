@@ -31,12 +31,7 @@ use Pod::Usage;
 use Glib ':constants';
 use Glib::Object::Introspection;
 use Gtk3;
-
-Glib::Object::Introspection->setup(
-  basename => 'WebKit',
-  version  => '3.0',
-  package  => 'WebKit'
-);
+use Gtk3::WebKit;
 use Cairo::GObject;
 
 my %TYPES = (
