@@ -10,6 +10,7 @@ screenshot-xpath.pl [OPTION]... [URI [XPATH]]
 
     -h, --help             print this help message
     -o, --output FILE      the screenshot file name
+    -s, --size   SIZE      the window's size (ex: 1024x800)
 
 Simple usage:
 
@@ -42,6 +43,7 @@ use constant ORDERED_NODE_SNAPSHOT_TYPE => 7;
 sub main {
     GetOptions(
         'o|output=s' => \my $filename,
+        's|size=s'   => \my $geometry,
     ) or pod2usage(1);
     my ($url, $xpath) = @ARGV;
     $url ||= 'http://localhost:3001/';
@@ -65,6 +67,9 @@ sub main {
 
 
     my $window = Gtk3::OffscreenWindow->new();
+    if ( my ($w, $h) = ($geometry =~ /^ ([0-9]+) x ([0-9]+) $/x) ) {
+        $window->set_default_size($w, $h);
+    }
 
     # Set the main window transparent
     my $screen = $window->get_screen;
