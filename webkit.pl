@@ -6,6 +6,11 @@ webkit.pl - Embed a webkit widget in an application
 
 =head1 SYNOPSIS
 
+webkit.pl [OPTION]... [URI]
+
+    -h, --help           print this help message
+    -u, --user-agent UA  the user agent to use
+
 Simple usage:
 
     webkit.pl http://www.google.com/
@@ -26,6 +31,9 @@ use Data::Dumper;
 
 
 sub main {
+    GetOptions(
+        'u|user-agent=s' => \my $user_agent,
+    ) or pod2usage(1);
     my ($url) = @ARGV;
     $url ||= 'http://localhost:3001/';
 
@@ -35,6 +43,11 @@ sub main {
 
 
     my $view = Gtk3::WebKit::WebView->new();
+
+    if ($user_agent) {
+        my $settings = $view->get_settings;
+        $settings->set('user-agent', $user_agent);
+    }
 
     # Pack the widgets together
     my $scrolls = Gtk3::ScrolledWindow->new();
