@@ -154,6 +154,7 @@ sub get_xpath_element {
 sub get_offsets {
     my ($element) = @_;
 
+    $element = $element->get('body') if $element->isa('Gtk3::WebKit::DOMDocument');
     my ($width, $height) = ($element->get_offset_width, $element->get_offset_height);
     my ($left, $top) =  ($element->get_offset_left, $element->get_offset_top);
 
