@@ -29,7 +29,6 @@ use Getopt::Long qw(:config auto_help);
 use Pod::Usage;
 
 use Glib ':constants';
-use Glib::Object::Introspection;
 use Gtk3;
 use Gtk3::WebKit;
 use Cairo::GObject;
@@ -61,7 +60,7 @@ sub main {
     $url ||= 'http://localhost:3001/';
     $filename ||= "screenshot.$type";
 
-    my $view = WebKit::WebView->new();
+    my $view = Gtk3::WebKit::WebView->new();
     $view->signal_connect('notify::load-status' => sub {
         return unless $view->get_uri and ($view->get_load_status eq 'finished');
 
