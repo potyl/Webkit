@@ -34,6 +34,7 @@ use Glib::Object::Introspection;
 use Gtk3 -init;
 use Gtk3::WebKit;
 use Cairo::GObject;
+use HTTP::Soup;
 
 use constant DOM_TYPE_ELEMENT => 1;
 use constant DOM_TYPE_DOCUMENT => 9;
@@ -42,13 +43,33 @@ use constant ORDERED_NODE_SNAPSHOT_TYPE => 7;
 
 sub main {
     GetOptions(
-        'o|output=s' => \my $filename,
-        's|size=s'   => \my $geometry,
+        'o|output=s'   => \my $filename,
+        's|size=s'     => \my $geometry,
+        'u|user=s'     => \my $user,
+        'p|password=s' => \my $password,
     ) or pod2usage(1);
     my ($url, $xpath) = @ARGV;
     $url ||= 'http://localhost:3001/';
     $xpath ||= '/';
     $filename = 'screenshot.png' unless defined $filename;
+
+
+    if (defined $user and defined $password) {
+        # Remove the default authentication dialog so that we can provide our
+        # own authentication method.
+        my $session = Gtk3::WebKit->get_default_session();
+        $session->remove_feature_by_type('Gtk3::WebKit::SoupAuthDialog');
+        my $count = 0;
+        $session->signal_connect('authenticate' => sub {
+            my ($session, $message, $auth) = @_;
+            if ($count++) {
+                print "Too many authentication failures\n";
+                Gtk3->main_quit();
+            }
+            $auth->authenticate($user, $password);
+        });
+    }
+
 
     my $view = Gtk3::WebKit::WebView->new();
     $view->signal_connect('notify::load-status' => sub {
