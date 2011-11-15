@@ -67,8 +67,9 @@ sub main {
 
 
     my $window = Gtk3::OffscreenWindow->new();
-    if ( my ($w, $h) = ($geometry =~ /^ ([0-9]+) x ([0-9]+) $/x) ) {
-        $window->set_default_size($w, $h);
+    if (defined $geometry and $geometry =~ /^ ([0-9]+) x ([0-9]+) $/x) {
+        my ($width, $height) = ($1, $2);
+        $window->set_default_size($width, $height);
     }
 
     # Set the main window transparent
