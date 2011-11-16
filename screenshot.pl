@@ -32,7 +32,7 @@ Save an element of a page taken from an XPath query as a PNG:
 
 =head1 DESCRIPTION
 
-Take a screenshot of a page or part of a page.
+Take a screenshot of a page or part of a page by specifying an XPath query.
 
 =cut
 
