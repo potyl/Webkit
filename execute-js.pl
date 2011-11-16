@@ -22,7 +22,6 @@ use warnings;
 use Glib ':constants';
 use Gtk3 -init;
 use Gtk3::WebKit;
-use Cairo;
 use Data::Dumper;
 
 
