@@ -14,6 +14,7 @@ screenshot.pl [OPTION]... URI
     -s, --size SIZE          the window's size (ex: 1024x800)
     -u, --user USER          the user name to use
     -p, --password PASSWORD  the password to use
+        --transparent        if true then the window will be transparent
     -h, --help               print this help message
 
 Simple usage:
@@ -67,6 +68,7 @@ sub main {
         'x|xpath=s'    => \my $xpath,
         'p|password=s' => \my $password,
         't|type=s'     => \my $type,
+        'transparent'  => \my $transparent,
     ) or pod2usage(1);
     my ($url) = @ARGV or pod2usage(1);
 
@@ -149,8 +151,10 @@ sub main {
 
     # Set the main window transparent
     my $screen = $window->get_screen;
-    $window->set_visual($screen->get_rgba_visual || $screen->get_system_visual);
-    $view->set_transparent(TRUE);
+    if ($transparent) {
+        $window->set_visual($screen->get_rgba_visual || $screen->get_system_visual);
+        $view->set_transparent(TRUE);
+    }
 
     $window->add($view);
     $window->show_all();
