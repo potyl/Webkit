@@ -27,7 +27,10 @@ use warnings;
 use Glib ':constants';
 use Gtk3 -init;
 use Gtk3::WebKit;
+
 use Data::Dumper;
+use Getopt::Long qw(:config auto_help);
+use Pod::Usage;
 
 
 sub main {
