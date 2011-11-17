@@ -27,14 +27,6 @@ use Gtk3 -init;
 use Gtk3::WebKit;
 use Data::Dumper;
 
-use Glib::Object::Introspection;
-Glib::Object::Introspection->setup(
-        basename => 'Gdk',
-        version  => '3.0',
-        package  => 'Gdk',
-);
-
-
 sub main {
     my ($url) = @ARGV;
     $url ||= 'http://localhost:3001/';
