@@ -8,6 +8,7 @@ screenshot.pl - Take a screenshot
 
 screenshot.pl [OPTION]... URI
 
+        --pause MS           number of miliseconds to wait before taking a screenshot
         --show               show the window where the screenshots are taken from
     -x, --xpath XPATH        XPath expression of the element to screenshot
     -t, --type TYPE          format type (svg, ps, pdf, png)
@@ -63,6 +64,7 @@ my %TYPES = (
 
 sub main {
     GetOptions(
+        'pause=i'      => \my $pause,
         'show'         => \my $show,
         'o|output=s'   => \my $filename,
         's|size=s'     => \my $geometry,
@@ -124,23 +126,15 @@ sub main {
         #  (<unknown>:19092): Gtk-CRITICAL **: gtk_widget_draw: assertion `!widget->priv->alloc_needed' failed
         # This seem to happend is there's a newtwork error and we can't download
         # external stuff (e.g. facebook iframe). This timeout seems to help a bit.
-        Glib::Idle->add( sub {
-
-            my ($left, $top, $width, $height) = (0, 0, 0, 0);
-            if (defined $xpath) {
-                # Get the first element returned by the XPath query and return it's offsets
-                my $element = get_xpath_element($view->get_dom_document, $xpath);
-                ($left, $top, $width, $height) = get_offsets($element) if $element;
-            }
-            if (!$width and !$height) {
-                ($width, $height) = ($view->get_allocated_width, $view->get_allocated_height);
-            }
-
-            $save_as_func->($view, $filename, $left, $top, $width, $height);
-            print "$filename has size: $width x $height\n";
-
-            Gtk3->main_quit();
-        });
+        my $grab_screenshot_cb = sub {
+            grab_screenshot($view, $filename, $save_as_func, $xpath);
+        };
+        if ($pause) {
+            Glib::Timeout->add($pause, $grab_screenshot_cb);
+        }
+        else {
+            Glib::Idle->add($grab_screenshot_cb);
+        }
     });
     $view->load_uri($url);
 
@@ -163,6 +157,26 @@ sub main {
 
     Gtk3->main();
     return 0;
+}
+
+
+sub grab_screenshot {
+    my ($view, $filename, $save_as_func, $xpath) = @_;
+
+    my ($left, $top, $width, $height) = (0, 0, 0, 0);
+    if (defined $xpath) {
+        # Get the first element returned by the XPath query and return it's offsets
+        my $element = get_xpath_element($view->get_dom_document, $xpath);
+        ($left, $top, $width, $height) = get_offsets($element) if $element;
+    }
+    if (!$width and !$height) {
+        ($width, $height) = ($view->get_allocated_width, $view->get_allocated_height);
+    }
+
+    $save_as_func->($view, $filename, $left, $top, $width, $height);
+    print "$filename has size: $width x $height\n";
+
+    Gtk3->main_quit();
 }
 
 
