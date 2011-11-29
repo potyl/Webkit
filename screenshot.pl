@@ -8,6 +8,7 @@ screenshot.pl - Take a screenshot
 
 screenshot.pl [OPTION]... URI
 
+        --show               show the window where the screenshots are taken from
     -x, --xpath XPATH        XPath expression of the element to screenshot
     -t, --type TYPE          format type (svg, ps, pdf, png)
     -o, --output FILE        the screenshot's file name
@@ -62,6 +63,7 @@ my %TYPES = (
 
 sub main {
     GetOptions(
+        'show'         => \my $show,
         'o|output=s'   => \my $filename,
         's|size=s'     => \my $geometry,
         'u|user=s'     => \my $user,
@@ -143,7 +145,7 @@ sub main {
     $view->load_uri($url);
 
 
-    my $window = Gtk3::OffscreenWindow->new();
+    my $window = $show ? Gtk3::Window->new('toplevel') : Gtk3::OffscreenWindow->new();
     if (defined $geometry and $geometry =~ /^ ([0-9]+) x ([0-9]+) $/x) {
         my ($width, $height) = ($1, $2);
         $window->set_default_size($width, $height);
