@@ -35,16 +35,13 @@ use Pod::Usage;
 
 use Glib ':constants';
 use Gtk3;
-use Gtk3::WebKit;
+use Gtk3::WebKit qw(:xpath_results :node_types);
 use HTTP::Soup;
 
 use CSS::DOM;
 use URI;
 use POSIX qw(_exit);
 use Time::HiRes qw(time);
-
-use constant DOM_TYPE_ELEMENT => 1;
-use constant ORDERED_NODE_SNAPSHOT_TYPE => 7;
 
 
 my $TRACE = 0;
@@ -166,7 +163,7 @@ sub report_selectors_usage {
 sub walk_dom {
     my ($node, $selectors) = @_;
 
-    if ($node->get_node_type == DOM_TYPE_ELEMENT) {
+    if ($node->get_node_type == ELEMENT_NODE) {
         foreach my $selector (keys %$selectors) {
             my $matches = $node->webkit_matches_selector($selector);
             ++$selectors->{$selector}{count} if $matches;
