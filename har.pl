@@ -2,17 +2,17 @@
 
 =head1 NAME
 
-downloads.pl - Track the download of each resource
+har.pl - Generate a HTTP Archive Specification
 
 =head1 SYNOPSIS
 
 Simple usage:
 
-    downloads.pl http://www.google.com/ 
+    har.pl http://www.google.com/ 
 
 =head1 DESCRIPTION
 
-Tracks all the downloads that are triggered for a starting page.
+Generates a HTTP Archive Specification for the given URL.
 
 =cut
 
@@ -25,29 +25,51 @@ use Gtk3::WebKit;
 use HTTP::Soup;
 use Data::Dumper;
 use Time::HiRes qw(time);
-
-my $TOTAL = 0;
-my $START;
+use POSIX qw(strftime);
 
 sub main {
     my ($url) = @ARGV;
     $url ||= 'http://localhost:3001/';
 
-    my $loop = Glib::MainLoop->new();
+    my $view = Gtk3::WebKit::WebView->new();
+
+    my $har = {
+        version => '1.2',
+        creator => {
+            name    => 'har.pl',
+            version => '1.0',
+        },
+        browser => {
+            name    => 'HAR', #$view->get_settings->get_user_agent
+            version => '1.0',
+        },
+        pages   => [
+            {
+                startedDateTime => undef, # to be defined later
+                id              => 'main_page',
+                title           => undef, # to be defined later
+                pageTimings     => {
+                    onContentLoad => -1,
+                    onLoad        => -1,
+                },
+            },
+        ],
+        entries => [],
+        comment => '',
+    };
 
     # Track all downloads
     my $session = Gtk3::WebKit->get_default_session();
-    my %resources;
-    $session->signal_connect('request-started' => \&tracker_cb, \%resources);
-
-    my $view = Gtk3::WebKit::WebView->new();
+    $session->signal_connect('request-started' => \&tracker_cb, $har);
 
     # Track once all downloads are finished
-    $view->signal_connect('notify::load-status' => \&load_status_cb, [ $loop, \%resources ]);
-
-    $START = time;
+    $view->signal_connect('notify::load-status' => \&load_status_cb, $har);
     $view->load_uri($url);
-    $loop->run();
+
+    my $start = time();
+    Gtk3->main();
+    $har->{pages}[0]{startedDateTime} = get_iso_8601_time($start);
+    print Dumper({ log => $har });
 
     return 0;
 }
@@ -55,9 +77,8 @@ sub main {
 
 # Called when WebKit is about to download a new resource (document, page, image, etc).
 sub tracker_cb {
-    my ($session, $message, $socket, $resources) = @_;
-    ++$TOTAL;
-
+    my ($session, $message, $socket, $har) = @_;
+my $resources = {};
     my $uri = $message->get_uri->to_string(FALSE);
     my $start = time;
     my $resource = $resources->{$uri} = {};
@@ -82,9 +103,9 @@ sub tracker_cb {
 
 # Called when webkit updates it's 'load-status'.
 sub load_status_cb {
-    my ($loop, $resources) = @{ pop @_ };
-    my ($view) = @_;
-
+    my ($view, undef, $har) = @_;
+print Dumper(\@_);
+my $resources = {};
     my $uri = $view->get_uri or return;
     return unless $view->get_load_status eq 'finished';
     my $end = time;
@@ -115,9 +136,19 @@ sub load_status_cb {
         printf "%s %d bytes; %s (%s) in %s sec\n", $uri, $size, $mime, $status_code, $time;
     }
 
-    printf "Downlodaded $TOTAL resources with $bytes bytes in %.2f seconds\n", $end - $START;
-    $loop->quit();
+    Gtk3::main_quit();
 }
 
+
+sub get_iso_8601_time {
+    my ($time) = @_;
+    my ($epoch, $fraction) = split /[.]/, $time;
+
+    # We need to munge the timezone indicator to add a colon between the hour and minute part
+    my $tz = strftime "%z", localtime $epoch;
+    $tz =~ s/([0-9]{2})([0-9]{2})/$1:$2/;
+
+    return strftime "%Y-%m-%dT%H:%M:%S.$fraction$tz", localtime $epoch;
+}
 
 exit main() unless caller;
