@@ -48,12 +48,8 @@ use Pod::Usage;
 
 use Glib ':constants';
 use Gtk3 -init;
-use Gtk3::WebKit;
+use Gtk3::WebKit qw(:xpath_results :node_types);
 use Cairo::GObject;
-
-use constant DOM_TYPE_ELEMENT => 1;
-use constant DOM_TYPE_DOCUMENT => 9;
-use constant ORDERED_NODE_SNAPSHOT_TYPE => 7;
 
 my %TYPES = (
     svg => sub { save_as_vector('Cairo::SvgSurface', @_) },
@@ -218,7 +214,7 @@ sub get_xpath_element {
     # We always return the first element
     my $element = $xpath_results->snapshot_item(0);
     my $node_type = $element->get_node_type;
-    if ($node_type != DOM_TYPE_ELEMENT and $node_type != DOM_TYPE_DOCUMENT) {
+    if ($node_type != ELEMENT_NODE and $node_type != DOCUMENT_NODE) {
         print "Can't handle node type $node_type\n";
         return;
     }
