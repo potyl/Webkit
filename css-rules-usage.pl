@@ -34,7 +34,7 @@ use Getopt::Long qw(:config auto_help);
 use Pod::Usage;
 
 use Glib ':constants';
-use Gtk3;
+use Gtk3 -init;
 use Gtk3::WebKit qw(:xpath_results :node_types);
 use HTTP::Soup;
 
@@ -50,8 +50,6 @@ my $VERBOSE = 0;
 
 
 sub main {
-    Gtk3::init();
-
     GetOptions(
         'save|s=s'  => \my $save,
         'trace|t'   => \$TRACE,
