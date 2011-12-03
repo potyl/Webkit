@@ -27,6 +27,8 @@ use HTTP::Soup;
 use Data::Dumper;
 use POSIX qw(strftime);
 use Time::HiRes qw(time);
+use URI;
+use URI::QueryParam;
 
 # For debugging
 $Data::Dumper::Pair = ' : ';
@@ -100,7 +102,8 @@ sub tracker_cb {
     };
     push @$har_entries, $har_entry;
 
-    my $uri = $message->get_uri->to_string(FALSE);
+    my $soup_uri = $message->get_uri;
+    my $uri = URI->new($soup_uri->to_string(FALSE));
     $message->signal_connect("finished" => sub {
         my $end_time = time;
         my $elapsed = $end_time - $start_time;
@@ -125,14 +128,24 @@ sub tracker_cb {
             }
         });
 
+        # Do we need to put the values encoded or decoded?
+        my @query_string;
+        foreach my $param ($uri->query_param) {
+            foreach my $value ($uri->query_param($param)) {
+                push @query_string, {
+                    name  => $param,
+                    value => $value,
+                };
+            }
+        }
 
         $har_entry->{request} = {
             method      => $message->get('method'),
-            url         => $uri,
+            url         => $uri->as_string,
             httpVersion => $http_version,
             cookies     => \@cookies,
             headers     => \@headers,
-            queryString => [],
+            queryString => \@query_string,
             postData    => {},
             headersSize => 150,
             bodySize    => 0,
