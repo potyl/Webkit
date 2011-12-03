@@ -156,8 +156,8 @@ sub build_request_struct {
         # Add the header as "Name: value\r\n"
         $header_size += length($name) + 2 + length($value) + 2;
 
-        if ($name eq 'Cookies') {
             push @cookies, get_cookies($value);
+        if ($name eq 'Cookie') {
         }
     });
     # Last "\r\n" marking the end of headers
