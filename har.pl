@@ -113,6 +113,11 @@ sub tracker_cb {
         my $http_version = uc $message->get_http_version;
         $http_version =~ s,^(HTTP)-([0-9])-([0-9]),$1/$2.$3,;
 
+        my $method = $message->get('method');
+
+        # Caculate the header's size. Start of the headers "GET / HTTP/1.1\r\n"
+        my $header_size = length($method) + 1 + length($uri->path_query) + 1 + length($http_version) + 2;
+
         # The request headers
         my $soup_headers = $message->get('request-headers');
         my @headers;
@@ -123,10 +128,16 @@ sub tracker_cb {
                 name  => $name,
                 value => $value,
             };
+
+            # Add the header as "Name: value\r\n"
+            $header_size += length($name) + 2 + length($value) + 2;
+
             if ($name eq 'Cookies') {
                 push @cookies, get_cookies($value);
             }
         });
+        # Last "\r\n" marking the end of headers
+        $header_size += 2;
 
         # Do we need to put the values encoded or decoded?
         # Also do we have to split ONLY at '&' ?
@@ -140,15 +151,16 @@ sub tracker_cb {
             }
         }
 
+
         $har_entry->{request} = {
-            method      => $message->get('method'),
+            method      => $method,
             url         => $uri->as_string,
             httpVersion => $http_version,
             cookies     => \@cookies,
             headers     => \@headers,
             queryString => \@query_string,
             #postData    => {},
-            headersSize => 150,
+            headersSize => $header_size,
             bodySize    => $message->get('request-body')->length,
         };
     });
