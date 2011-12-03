@@ -41,7 +41,7 @@ sub main {
 
     my $view = Gtk3::WebKit::WebView->new();
 
-    my $har = {
+    my %har = (
         version => '1.2',
         creator => {
             name    => 'har.pl',
@@ -64,32 +64,91 @@ sub main {
         ],
         entries => [],
         comment => '',
-    };
+    );
 
     # Track all downloads
     my $session = Gtk3::WebKit->get_default_session();
-    $session->signal_connect('request-started' => \&tracker_cb, $har);
+    $session->signal_connect('request-started' => \&tracker_cb, \%har);
 
     # Track once all downloads are finished
-    $view->signal_connect('notify::load-status' => \&load_status_cb, $har);
-    $view->load_uri($url);
+    #$view->signal_connect('notify::load-status' => \&load_status_cb, $har);
+    #$view->load_uri($url);
+
+
+
+
+    my $l_button = Gtk3::Button->new("load");
+    my $p_button = Gtk3::Button->new("print");
+
+    # Execute the javascript when the user wants it
+    $l_button->signal_connect(clicked => sub {
+
+        %har = (
+            version => '1.2',
+            creator => {
+                name    => 'har.pl',
+                version => '1.0',
+            },
+            browser => {
+                name    => 'HAR', #$view->get_settings->get_user_agent
+                version => '1.0',
+            },
+            pages   => [
+                {
+                    startedDateTime => undef, # to be defined later
+                    id              => 'main_page',
+                    title           => undef, # to be defined later
+                    pageTimings     => {
+                        onContentLoad => -1,
+                        onLoad        => -1,
+                    },
+                },
+            ],
+            entries => [],
+            comment => '',
+        );
+
+        $har{pages}[0]{startedDateTime} = get_iso_8601_time(time);
+        $view->load_uri($url);
+    });
+
+    $p_button->signal_connect(clicked => sub {
+        my $log_har = { log => \%har };
+        my $json = to_json(
+            $log_har,
+            # JSON configuration
+            {
+                utf8      => 1,
+                pretty    => 1,
+                canonical => 1,
+            }
+        );
+        print $json;
+    });
+
+
+    # Pack the widgets together
+    my $sw = Gtk3::ScrolledWindow->new();
+    $sw->add($view);
+    my $hbox = Gtk3::HBox->new(0, 0);
+    $hbox->pack_start($p_button, TRUE, TRUE, 2);
+    $hbox->pack_start($l_button, TRUE, TRUE, 2);
+
+    my $box = Gtk3::VBox->new(0, 0);
+    $box->pack_start($hbox, FALSE, FALSE, 2);
+    $box->pack_start($sw, TRUE, TRUE, 2);
+
+
+    my $window = Gtk3::Window->new('toplevel');
+    $window->set_default_size(800, 600);
+    $window->signal_connect(destroy => sub { Gtk3->main_quit() });
+
+    $window->add($box);
+    $window->show_all();
+
+
 
     Gtk3->main();
-    $har->{pages}[0]{startedDateTime} = get_iso_8601_time(time);
-    #print Dumper({ log => $har });
-    #print Dumper($har->{entries});
-
-    my $log_har = { log => $har };
-    my $json = to_json(
-        $log_har,
-        # JSON configuration
-        {
-            utf8      => 1,
-            pretty    => 1,
-            canonical => 1,
-        }
-    );
-    print $json;
 
     return 0;
 }
@@ -225,8 +284,9 @@ my $resources = {};
 #        printf "%s %d bytes; %s (%s) in %s sec\n", $uri, $size, $mime, $status_code, $time;
     }
 
-    print "Quit\n";
-    Gtk3::main_quit();
+#    print "Quit\n";
+#    Gtk3::main_quit();
+#    $view->load_uri($ARGV[0]);
 }
 
 
