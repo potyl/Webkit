@@ -27,6 +27,9 @@ use Data::Dumper;
 use Time::HiRes qw(time);
 use POSIX qw(strftime);
 
+$Data::Dumper::Pair = ' : ';
+$Data::Dumper::Sortkeys = 1;
+
 sub main {
     my ($url) = @ARGV;
     $url ||= 'http://localhost:3001/';
@@ -69,7 +72,8 @@ sub main {
     my $start = time();
     Gtk3->main();
     $har->{pages}[0]{startedDateTime} = get_iso_8601_time($start);
-    print Dumper({ log => $har });
+    #print Dumper({ log => $har });
+    print Dumper($har->{entries});
 
     return 0;
 }
@@ -78,23 +82,55 @@ sub main {
 # Called when WebKit is about to download a new resource (document, page, image, etc).
 sub tracker_cb {
     my ($session, $message, $socket, $har) = @_;
-my $resources = {};
-    my $uri = $message->get_uri->to_string(FALSE);
-    my $start = time;
-    my $resource = $resources->{$uri} = {};
-    $resource->{start} = time;
-    $resource->{uri} = $uri;
-    $message->signal_connect("finished" => sub {
-        my $end = $resource->{end} = time;
-        my $elapsed = $resource->{elapsed} = $end - $start;
-        my $status_code = $resource->{status_code} = $message->get('status-code') // 'undef';
-        #printf "Downloaded %s in %.2f seconds; code: %s\n", $uri, $elapsed, $status_code;
 
-        my $headers = $message->get('response-headers');
-        $headers->foreach(sub {
+    my $start_time = time;
+    my $har_entries = $har->{entries};
+    my $har_entry = {
+        pageref         => 'page_' . @$har_entries,
+        startedDateTime => get_iso_8601_time($start_time),
+        response        => {},
+        cache           => {},
+        timings         => {},
+        # These fields have to be set once the connection is initialized ($message->get_address)
+        #serverIPAddress => '10.0.0.1',
+        #connection      => '52492',
+    };
+    push @$har_entries, $har_entry;
+
+    my $uri = $message->get_uri->to_string(FALSE);
+    $message->signal_connect("finished" => sub {
+        my $end_time = time;
+        my $elapsed = $end_time - $start_time;
+        $har_entry->{time} = int($elapsed * 1000); # As milliseconds
+
+        # Transform 'http-1-1' into 'HTTP/1.1'
+        my $http_version = uc $message->get_http_version;
+        $http_version =~ s,^(HTTP)-([0-9])-([0-9]),$1/$2.$3,;
+
+        # The response headers
+        my $soup_headers = $message->get('response-headers');
+        my @headers;
+        $soup_headers->foreach(sub {
             my ($name, $value) = @_;
-            print "Header: $name => $value\n";
+            push @headers, {
+                name  => $name,
+                value => $value,
+            };
         });
+
+
+        $har_entry->{request} = {
+            method      => $message->get('method'),
+            url         => $uri,
+            httpVersion => $http_version,
+            cookies => [],
+            headers => \@headers,
+            queryString => [],
+            postData => {},
+            headersSize => 150,
+            bodySize => 0,
+            comment => "",
+        };
     });
 
     return;
@@ -122,7 +158,7 @@ my $resources = {};
         my $data = $resources->{$uri};
         my $time;
         if (! $data) {
-            print "Can't find data for $uri\n";
+#            print "Can't find data for $uri\n";
             $time = "???";
         }
         else {
@@ -133,9 +169,10 @@ my $resources = {};
         $bytes += $size;
         my $mime = $resource->get_mime_type // 'No mime-type';
         my $status_code = $data->{status_code} // 'undef';
-        printf "%s %d bytes; %s (%s) in %s sec\n", $uri, $size, $mime, $status_code, $time;
+#        printf "%s %d bytes; %s (%s) in %s sec\n", $uri, $size, $mime, $status_code, $time;
     }
 
+    print "Quit\n";
     Gtk3::main_quit();
 }
 
