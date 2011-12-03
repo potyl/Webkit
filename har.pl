@@ -149,7 +149,7 @@ sub tracker_cb {
             queryString => \@query_string,
             postData    => {},
             headersSize => 150,
-            bodySize    => 0,
+            bodySize    => $message->get('request-body')->length,
         };
     });
 
