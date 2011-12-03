@@ -25,6 +25,7 @@ use Gtk3::WebKit;
 use HTTP::Soup;
 
 use Data::Dumper;
+use JSON qw(to_json);
 use POSIX qw(strftime);
 use Time::HiRes qw(time);
 use URI;
@@ -77,8 +78,19 @@ sub main {
     Gtk3->main();
     $har->{pages}[0]{startedDateTime} = get_iso_8601_time($start);
     #print Dumper({ log => $har });
-    print Dumper($har->{entries});
-    # FIXME serialize as JSON with JSON.pm
+    #print Dumper($har->{entries});
+
+    my $log_har = { log => $har };
+    my $json = to_json(
+        $log_har,
+        # JSON configuration
+        {
+            utf8      => 1,
+            pretty    => 1,
+            canonical => 1,
+        }
+    );
+    print $json;
 
     return 0;
 }
