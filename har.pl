@@ -144,7 +144,7 @@ sub tracker_cb {
 # Called when webkit updates it's 'load-status'.
 sub load_status_cb {
     my ($view, undef, $har) = @_;
-print Dumper(\@_);
+
 my $resources = {};
     my $uri = $view->get_uri or return;
     return unless $view->get_load_status eq 'finished';
