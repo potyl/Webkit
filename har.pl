@@ -113,8 +113,8 @@ sub tracker_cb {
         my $http_version = uc $message->get_http_version;
         $http_version =~ s,^(HTTP)-([0-9])-([0-9]),$1/$2.$3,;
 
-        # The response headers
-        my $soup_headers = $message->get('response-headers');
+        # The request headers
+        my $soup_headers = $message->get('request-headers');
         my @headers;
         my @cookies;
         $soup_headers->foreach(sub {
