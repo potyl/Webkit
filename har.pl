@@ -156,8 +156,8 @@ sub build_request_struct {
         # Add the header as "Name: value\r\n"
         $header_size += length($name) + 2 + length($value) + 2;
 
-            push @cookies, get_cookies($value);
         if ($name eq 'Cookie') {
+            push @cookies, get_cookies($value, $soup_uri);
         }
     });
     # Last "\r\n" marking the end of headers
@@ -231,11 +231,23 @@ my $resources = {};
 
 
 sub get_cookies {
-    my ($raw) = @_;
+    my ($raw, $uri) = @_;
     # FIXME can't parse cookies because of a GIR error: expected a blessed reference at /usr/local/lib/perl/5.12.4/Glib/Object/Introspection.pm line 57.
-    #my $c = HTTP::Soup::Cookie->parse($raw, HTTP::Soup::URI->new('/'));
-    #print Dumper($c);
-    return;
+    my $cookie = HTTP::Soup::Cookie::parse($raw, $uri);
+
+    my $har_cookie = {
+        name     => $cookie->get_name,
+        value    => $cookie->get_value,
+        path     => $cookie->get_path,
+        domain   => $cookie->get_domain,
+        httpOnly => $cookie->get_http_only ? 1 : 0,
+        secure   => $cookie->get_secure ? 1 : 0,
+    };
+
+    my $expires = $cookie->get_expires;
+    $har_cookie->{expires} = $expires->to_string(5) if defined $expires;
+
+    $har_cookie;
 }
 
 
