@@ -74,6 +74,7 @@ sub main {
     $har->{pages}[0]{startedDateTime} = get_iso_8601_time($start);
     #print Dumper({ log => $har });
     print Dumper($har->{entries});
+    # FIXME serialize as JSON with JSON.pm
 
     return 0;
 }
@@ -145,6 +146,7 @@ my $resources = {};
     my $uri = $view->get_uri or return;
     return unless $view->get_load_status eq 'finished';
     my $end = time;
+    #FIXME wait until all resources are downloaded
 
     my $frame = $view->get_main_frame;
     my $data_source = $frame->get_data_source;
