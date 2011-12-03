@@ -28,6 +28,7 @@ use Data::Dumper;
 use POSIX qw(strftime);
 use Time::HiRes qw(time);
 
+# For debugging
 $Data::Dumper::Pair = ' : ';
 $Data::Dumper::Sortkeys = 1;
 
