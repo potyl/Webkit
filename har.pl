@@ -111,12 +111,16 @@ sub tracker_cb {
         # The response headers
         my $soup_headers = $message->get('response-headers');
         my @headers;
+        my @cookies;
         $soup_headers->foreach(sub {
             my ($name, $value) = @_;
             push @headers, {
                 name  => $name,
                 value => $value,
             };
+            if ($name eq 'Cookies') {
+                push @cookies, get_cookies($value);
+            }
         });
 
 
@@ -124,13 +128,12 @@ sub tracker_cb {
             method      => $message->get('method'),
             url         => $uri,
             httpVersion => $http_version,
-            cookies => [],
-            headers => \@headers,
+            cookies     => \@cookies,
+            headers     => \@headers,
             queryString => [],
-            postData => {},
+            postData    => {},
             headersSize => 150,
-            bodySize => 0,
-            comment => "",
+            bodySize    => 0,
         };
     });
 
@@ -176,6 +179,15 @@ my $resources = {};
 
     print "Quit\n";
     Gtk3::main_quit();
+}
+
+
+sub get_cookies {
+    my ($raw) = @_;
+    # FIXME can't parse cookies because of a GIR error: expected a blessed reference at /usr/local/lib/perl/5.12.4/Glib/Object/Introspection.pm line 57.
+    #my $c = HTTP::Soup::Cookie->parse($raw, HTTP::Soup::URI->new('/'));
+    #print Dumper($c);
+    return;
 }
 
 
