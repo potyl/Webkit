@@ -147,7 +147,7 @@ sub tracker_cb {
             cookies     => \@cookies,
             headers     => \@headers,
             queryString => \@query_string,
-            postData    => {},
+            #postData    => {},
             headersSize => 150,
             bodySize    => $message->get('request-body')->length,
         };
