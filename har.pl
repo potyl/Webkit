@@ -129,6 +129,7 @@ sub tracker_cb {
         });
 
         # Do we need to put the values encoded or decoded?
+        # Also do we have to split ONLY at '&' ?
         my @query_string;
         foreach my $param ($uri->query_param) {
             foreach my $value ($uri->query_param($param)) {
