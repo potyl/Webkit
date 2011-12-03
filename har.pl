@@ -74,9 +74,8 @@ sub main {
     $view->signal_connect('notify::load-status' => \&load_status_cb, $har);
     $view->load_uri($url);
 
-    my $start = time();
     Gtk3->main();
-    $har->{pages}[0]{startedDateTime} = get_iso_8601_time($start);
+    $har->{pages}[0]{startedDateTime} = get_iso_8601_time(time);
     #print Dumper({ log => $har });
     #print Dumper($har->{entries});
 
