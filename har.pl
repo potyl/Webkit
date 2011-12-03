@@ -23,9 +23,10 @@ use Glib ':constants';
 use Gtk3 -init;
 use Gtk3::WebKit;
 use HTTP::Soup;
+
 use Data::Dumper;
-use Time::HiRes qw(time);
 use POSIX qw(strftime);
+use Time::HiRes qw(time);
 
 $Data::Dumper::Pair = ' : ';
 $Data::Dumper::Sortkeys = 1;
