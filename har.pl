@@ -121,65 +121,74 @@ sub tracker_cb {
         my $elapsed = $end_time - $start_time;
         $har_entry->{time} = int($elapsed * 1000); # As milliseconds
 
-        # Transform 'http-1-1' into 'HTTP/1.1'
-        my $http_version = uc $message->get_http_version;
-        $http_version =~ s,^(HTTP)-([0-9])-([0-9]),$1/$2.$3,;
-
-        my $method = $message->get('method');
-
-        # Caculate the header's size. Start of the headers "GET / HTTP/1.1\r\n"
-        my $header_size = length($method) + 1 + length($uri->path_query) + 1 + length($http_version) + 2;
-
-        # The request headers
-        my $soup_headers = $message->get('request-headers');
-        my @headers;
-        my @cookies;
-        $soup_headers->foreach(sub {
-            my ($name, $value) = @_;
-            push @headers, {
-                name  => $name,
-                value => $value,
-            };
-
-            # Add the header as "Name: value\r\n"
-            $header_size += length($name) + 2 + length($value) + 2;
-
-            if ($name eq 'Cookies') {
-                push @cookies, get_cookies($value);
-            }
-        });
-        # Last "\r\n" marking the end of headers
-        $header_size += 2;
-
-        # Do we need to put the values encoded or decoded?
-        # Also do we have to split ONLY at '&' ?
-        my @query_string;
-        foreach my $param ($uri->query_param) {
-            foreach my $value ($uri->query_param($param)) {
-                push @query_string, {
-                    name  => $param,
-                    value => $value,
-                };
-            }
-        }
-
-
-        $har_entry->{request} = {
-            method      => $method,
-            url         => $uri->as_string,
-            httpVersion => $http_version,
-            cookies     => \@cookies,
-            headers     => \@headers,
-            queryString => \@query_string,
-            #postData    => {},
-            headersSize => $header_size,
-            bodySize    => $message->get('request-body')->length,
-        };
+        $har_entry->{request} = build_request_struct($message);
     });
 
     return;
 }
 
+
+sub build_request_struct {
+    my ($message) = @_;
+
+    my $soup_uri = $message->get_uri;
+    my $uri = URI->new($soup_uri->to_string(FALSE));
+
+    # Transform 'http-1-1' into 'HTTP/1.1'
+    my $http_version = uc $message->get_http_version;
+    $http_version =~ s,^(HTTP)-([0-9])-([0-9]),$1/$2.$3,;
+
+    my $method = $message->get('method');
+
+    # Caculate the header's size. Start of the headers "GET / HTTP/1.1\r\n"
+    my $header_size = length($method) + 1 + length($uri->path_query) + 1 + length($http_version) + 2;
+
+    # The request headers
+    my $soup_headers = $message->get('request-headers');
+    my @headers;
+    my @cookies;
+    $soup_headers->foreach(sub {
+        my ($name, $value) = @_;
+        push @headers, {
+            name  => $name,
+            value => $value,
+        };
+
+        # Add the header as "Name: value\r\n"
+        $header_size += length($name) + 2 + length($value) + 2;
+
+        if ($name eq 'Cookies') {
+            push @cookies, get_cookies($value);
+        }
+    });
+    # Last "\r\n" marking the end of headers
+    $header_size += 2;
+
+    # Do we need to put the values encoded or decoded?
+    # Also do we have to split ONLY at '&' ?
+    my @query_string;
+    foreach my $param ($uri->query_param) {
+        foreach my $value ($uri->query_param($param)) {
+            push @query_string, {
+                name  => $param,
+                value => $value,
+            };
+        }
+    }
+
+    # A request
+    return {
+        method      => $method,
+        url         => $uri->as_string,
+        httpVersion => $http_version,
+        cookies     => \@cookies,
+        headers     => \@headers,
+        queryString => \@query_string,
+        #postData    => {},
+        headersSize => $header_size,
+        bodySize    => $message->get('request-body')->length,
+    };
+}
 
 # Called when webkit updates it's 'load-status'.
 sub load_status_cb {
