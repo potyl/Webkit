@@ -192,10 +192,7 @@ sub get_har_request {
     my $soup_uri = $message->get_uri;
     my $uri = URI->new($soup_uri->to_string(FALSE));
 
-    # Transform 'http-1-1' into 'HTTP/1.1'
-    my $http_version = uc $message->get_http_version;
-    $http_version =~ s,^(HTTP)-([0-9])-([0-9]),$1/$2.$3,;
-
+    my $http_version = get_http_version($message);
     my $method = $message->get('method');
 
     # Caculate the header's size. Start of the headers "GET / HTTP/1.1\r\n"
@@ -321,5 +318,16 @@ sub get_iso_8601_time {
 
     return strftime "%Y-%m-%dT%H:%M:%S.$fraction$tz", localtime $epoch;
 }
+
+
+sub get_http_version {
+    my ($message) = @_;
+
+    # Transform 'http-1-1' into 'HTTP/1.1'
+    my $http_version = uc $message->get_http_version;
+    $http_version =~ s,^(HTTP)-([0-9])-([0-9]),$1/$2.$3,;
+    return $http_version;
+}
+
 
 exit main() unless caller;
