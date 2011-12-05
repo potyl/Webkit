@@ -179,7 +179,8 @@ sub tracker_cb {
         my $elapsed = $end_time - $start_time;
         $har_entry->{time} = int($elapsed * 1000); # As milliseconds
 
-        $har_entry->{request} = get_har_request($message);
+        $har_entry->{request}  = get_har_request($message);
+        $har_entry->{response} = get_har_response($message);
     });
 
     return;
@@ -244,6 +245,61 @@ sub get_har_request {
         bodySize    => $message->get('request-body')->length,
     };
 }
+
+
+sub get_har_response {
+    my ($message) = @_;
+
+    my $http_version = get_http_version($message);
+    my $status       = $message->get('status-code');
+    my $status_text  = $message->get('reason-phrase');
+
+    # Caculate the header's size. Start of the headers "HTTP/1.1 301 Moved Permanently\r\n"
+    my $header_size = length($http_version) + 1 + length($status) + 1 + length($status_text) + 2;
+
+    # The request headers
+    my $soup_headers = $message->get('response-headers');
+    my @headers;
+    my @cookies;
+    my $redirect_url;
+    my $soup_uri = $message->get_uri;
+    $soup_headers->foreach(sub {
+        my ($name, $value) = @_;
+        push @headers, {
+            name  => $name,
+            value => $value,
+        };
+
+        # Add the header as "Name: value\r\n"
+        $header_size += length($name) + 2 + length($value) + 2;
+
+        if ($name eq 'Set-Cookie') {
+            print "Set-Cookie: $value\n";
+            push @cookies, get_cookies($value, $soup_uri);
+        }
+        elsif ($name eq 'Location') {
+            # Should location be the exact value sent by the header or should it
+            # be an absolute URL?
+            $redirect_url = $value;
+        }
+    });
+    # Last "\r\n" marking the end of headers
+    $header_size += 2;
+
+
+    return {
+        status      => $status,
+        statusText  => $status_text,
+        httpVersion => $http_version,
+        cookies     => \@cookies,
+        headers     => \@headers,
+        content     => {},
+        redirectURL => $redirect_url,
+        headersSize => $header_size,
+        bodySize    => $status == 304 ? 0 : $message->get('response-body')->length,
+    };
+}
+
 
 # Called when webkit updates it's 'load-status'.
 sub load_status_cb {
