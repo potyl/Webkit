@@ -179,14 +179,14 @@ sub tracker_cb {
         my $elapsed = $end_time - $start_time;
         $har_entry->{time} = int($elapsed * 1000); # As milliseconds
 
-        $har_entry->{request} = build_request_struct($message);
+        $har_entry->{request} = get_har_request($message);
     });
 
     return;
 }
 
 
-sub build_request_struct {
+sub get_har_request {
     my ($message) = @_;
 
     my $soup_uri = $message->get_uri;
