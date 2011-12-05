@@ -305,7 +305,7 @@ sub get_cookies {
     };
 
     my $expires = $cookie->get_expires;
-    $har_cookie->{expires} = $expires->to_string(5) if defined $expires;
+    $har_cookie->{expires} = $expires->to_string('iso8601-full') if defined $expires;
 
     $har_cookie;
 }
