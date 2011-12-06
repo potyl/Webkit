@@ -23,6 +23,7 @@ nanny.pl            - very simple parental control
 git.pl              - display a web page using GIR
 screenshot          - save a screenshot as a PDF, PNG, SVG or PS
 s5pdf               - save a S5 presentation in PDF
+deck2pdf            - save a Deck JS presentation in PDF
 css-rules-usage.p l - list css rules and their usage
 dom-walker          - walk the DOM tree
 js                  - get the page's title through JavaScript
