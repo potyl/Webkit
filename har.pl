@@ -262,6 +262,7 @@ sub get_har_response {
     my @cookies;
     my $redirect_url;
     my $soup_uri = $message->get_uri;
+    my $mime_type;
     $soup_headers->foreach(sub {
         my ($name, $value) = @_;
         push @headers, {
@@ -281,10 +282,25 @@ sub get_har_response {
             # be an absolute URL?
             $redirect_url = $value;
         }
+
+        $mime_type = $value if $name eq 'Content-Type';
     });
     # Last "\r\n" marking the end of headers
     $header_size += 2;
 
+    my $body = $message->get('response-body');
+    my $is_compressed = 0; # FIXME detect compresion
+    my $content = {
+        mimeType => $mime_type,
+    };
+    if ($is_compressed) {
+        # FIXME implement content for decompression
+    }
+    else {
+        $content->{size} = $body->length;
+        $content->{compression} = 0;
+        $content->{text} = $body->data;
+    }
 
     return {
         status      => $status,
@@ -292,10 +308,10 @@ sub get_har_response {
         httpVersion => $http_version,
         cookies     => \@cookies,
         headers     => \@headers,
-        content     => {},
+        content     => $content,
         redirectURL => $redirect_url,
         headersSize => $header_size,
-        bodySize    => $status == 304 ? 0 : $message->get('response-body')->length,
+        bodySize    => $status == 304 ? 0 : $body->length,
     };
 }
 
