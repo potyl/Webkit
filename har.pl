@@ -278,7 +278,7 @@ sub get_har_response {
     my $soup_headers = $message->get('response-headers');
     my @headers;
     my @cookies;
-    my $redirect_url;
+    my $redirect_url = '';
     my $soup_uri = $message->get_uri;
     my $mime_type;
     $soup_headers->foreach(sub {
