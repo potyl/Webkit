@@ -71,10 +71,7 @@ sub main {
     $session->signal_connect('request-started' => \&tracker_cb, \%har);
 
     # Track once all downloads are finished
-    #$view->signal_connect('notify::load-status' => \&load_status_cb, $har);
-    #$view->load_uri($url);
-
-
+    $view->signal_connect('notify::load-status' => \&load_status_cb, \%har);
 
 
     my $l_button = Gtk3::Button->new("load");
@@ -82,7 +79,6 @@ sub main {
 
     # Execute the javascript when the user wants it
     $l_button->signal_connect(clicked => sub {
-
         %har = (
             version => '1.2',
             creator => {
@@ -123,7 +119,12 @@ sub main {
                 canonical => 1,
             }
         );
-        print $json;
+
+        my $file = 'log.har';
+        open my $handle, '>:encoding(utf-8)', $file or die "Can't write to file $file: $!";
+        print $handle $json;
+        close $handle;
+        print "Saved file $file\n";
     });
 
 
@@ -145,8 +146,6 @@ sub main {
 
     $window->add($box);
     $window->show_all();
-
-
 
     Gtk3->main();
 
@@ -183,6 +182,25 @@ sub tracker_cb {
     });
 
     return;
+}
+
+
+# Called when webkit updates it's 'load-status'.
+sub load_status_cb {
+    my ($har) = pop @_;
+    my ($view) = @_;
+
+    my $uri = $view->get_uri or return;
+    return unless $view->get_load_status eq 'finished';
+
+    my $frame = $view->get_main_frame;
+    my $data_source = $frame->get_data_source;
+    return if $data_source->is_loading;
+
+    # Take the page title (can only be accessed once the DOM is constructed)
+    $har->{pages}[0]{title} = $view->get_title;
+
+    # FIXME detect the end of all resources and write the HAR file
 }
 
 
@@ -313,48 +331,6 @@ sub get_har_response {
         headersSize => $header_size,
         bodySize    => $status == 304 ? 0 : $body->length,
     };
-}
-
-
-# Called when webkit updates it's 'load-status'.
-sub load_status_cb {
-    my ($view, undef, $har) = @_;
-
-my $resources = {};
-    my $uri = $view->get_uri or return;
-    return unless $view->get_load_status eq 'finished';
-    my $end = time;
-    #FIXME wait until all resources are downloaded
-
-    my $frame = $view->get_main_frame;
-    my $data_source = $frame->get_data_source;
-    return if $data_source->is_loading;
-
-    my $bytes = 0;
-    foreach my $resource ($data_source->get_main_resource, @{ $data_source->get_subresources }) {
-        my $uri = $resource->get_uri;
-        next if $uri eq 'about:blank';
-
-        my $data = $resources->{$uri};
-        my $time;
-        if (! $data) {
-#            print "Can't find data for $uri\n";
-            $time = "???";
-        }
-        else {
-            $time = $resources->{$uri}{elapsed};
-            $time = defined $time ? sprintf "%.2f", $time : 'undef';
-        }
-        my $size = length($resource->get_data // '');
-        $bytes += $size;
-        my $mime = $resource->get_mime_type // 'No mime-type';
-        my $status_code = $data->{status_code} // 'undef';
-#        printf "%s %d bytes; %s (%s) in %s sec\n", $uri, $size, $mime, $status_code, $time;
-    }
-
-#    print "Quit\n";
-#    Gtk3::main_quit();
-#    $view->load_uri($ARGV[0]);
 }
 
 
