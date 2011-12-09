@@ -163,9 +163,8 @@ sub tracker_cb {
     my $har_entry = {
         pageref         => 'page_' . @$har_entries,
         startedDateTime => get_iso_8601_time($start_time),
-        response        => {},
-        cache           => {},
-        timings         => {},
+        cache           => {}, # TODO
+        timings         => {}, # TODO
         # These fields have to be set once the connection is initialized ($message->get_address)
         #serverIPAddress => '10.0.0.1',
         #connection      => '52492',
