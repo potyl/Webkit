@@ -280,7 +280,7 @@ sub get_har_response {
     my @cookies;
     my $redirect_url = '';
     my $soup_uri = $message->get_uri;
-    my $mime_type;
+    my $mime_type = '';
     $soup_headers->foreach(sub {
         my ($name, $value) = @_;
         push @headers, {
