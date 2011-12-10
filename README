@@ -27,6 +27,7 @@ deck2pdf            - save a Deck JS presentation in PDF
 css-rules-usage.p l - list css rules and their usage
 dom-walker          - walk the DOM tree
 js                  - get the page's title through JavaScript
+har.pl              - generate an HTTP Archive (HAR) file from a web page
 
 How to Build
 ------------
