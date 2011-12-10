@@ -158,17 +158,27 @@ sub tracker_cb {
     my ($session, $message, $socket, $har) = @_;
 
     my $start_time = time;
+
+    my $timings = {
+        # FIXME put real values here
+        send    => 0,
+        wait    => 0,
+    };
+
+
     my $har_entries = $har->{entries};
     my $har_entry = {
         pageref         => 'page_' . @$har_entries,
         startedDateTime => get_iso_8601_time($start_time),
         cache           => {}, # TODO
-        timings         => {}, # TODO
+        timings         => $timings,
         # These fields have to be set once the connection is initialized ($message->get_address)
+        # TODO add serverIPAddress & connection
         #serverIPAddress => '10.0.0.1',
         #connection      => '52492',
     };
     push @$har_entries, $har_entry;
+
 
     my $soup_uri = $message->get_uri;
     my $uri = URI->new($soup_uri->to_string(FALSE));
@@ -176,6 +186,7 @@ sub tracker_cb {
         my $end_time = time;
         my $elapsed = $end_time - $start_time;
         $har_entry->{time} = int($elapsed * 1000); # As milliseconds
+        $timings->{receive} = $har_entry->{time};
 
         $har_entry->{request}  = get_har_request($message);
         $har_entry->{response} = get_har_response($message);
