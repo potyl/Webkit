@@ -328,7 +328,7 @@ sub get_har_response {
     else {
         $content->{size} = $body->length;
         $content->{compression} = 0;
-        $content->{text} = $body->data;
+        $content->{text} = $body->data // '';
     }
 
     return {
