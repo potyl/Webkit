@@ -35,6 +35,9 @@ use URI::QueryParam;
 $Data::Dumper::Pair = ' : ';
 $Data::Dumper::Sortkeys = 1;
 
+my $REQUESTS_STARTED = 0;
+my $REQUESTS_FINISHED = 0;
+
 sub main {
     my ($url) = @ARGV;
     $url ||= 'http://localhost:3001/';
@@ -79,6 +82,10 @@ sub main {
 
     # Execute the javascript when the user wants it
     $l_button->signal_connect(clicked => sub {
+
+        # Start of the tracking
+        $REQUESTS_STARTED = 0;
+        $REQUESTS_FINISHED = 0;
         %har = (
             version => '1.2',
             creator => {
@@ -158,6 +165,7 @@ sub tracker_cb {
     my ($session, $message, $socket, $har) = @_;
 
     my $start_time = time;
+    ++$REQUESTS_STARTED;
 
     my $timings = {
         # FIXME put real values here
@@ -184,6 +192,7 @@ sub tracker_cb {
     my $uri = URI->new($soup_uri->to_string(FALSE));
     $message->signal_connect("finished" => sub {
         my $end_time = time;
+        ++$REQUESTS_FINISHED;
         my $elapsed = $end_time - $start_time;
         $har_entry->{time} = int($elapsed * 1000); # As milliseconds
         $timings->{receive} = $har_entry->{time};
@@ -204,14 +213,63 @@ sub load_status_cb {
     my $uri = $view->get_uri or return;
     return unless $view->get_load_status eq 'finished';
 
-    my $frame = $view->get_main_frame;
-    my $data_source = $frame->get_data_source;
-    return if $data_source->is_loading;
+    # Detect the end of all resources and write the HAR file
+    Glib::Idle->add(sub {
+        my $frame = $view->get_main_frame;
+        my $data_source = $frame->get_data_source;
+        return 1 if $data_source->is_loading;
+        return 1 unless $REQUESTS_STARTED and $REQUESTS_STARTED == $REQUESTS_FINISHED;
 
-    # Take the page title (can only be accessed once the DOM is constructed)
-    $har->{pages}[0]{title} = $view->get_title;
+        my @resources = (
+            $data_source->get_main_resource,
+            @{ $data_source->get_subresources },
+        );
+        my %resources;
+        foreach my $resource (@resources) {
+            # TODO detect if a resource is pending and go to idle mode
+            my $data = $resource->get_data;
+            next unless defined $data;
+            my $uri = $resource->get_uri or next;
+            $resources{$uri} = $resource;
+        }
 
-    # FIXME detect the end of all resources and write the HAR file
+        # Take the page title (can only be accessed once the DOM is constructed)
+        $har->{pages}[0]{title} = $view->get_title;
+
+        # Complete the 'content' based the resources
+        foreach my $har_entry (@{ $har->{entries} }) {
+            my $url = $har_entry->{request}{url};
+            my $resource = $resources{$url} or die "Can't find resource for: $url";
+
+            my $response = $har_entry->{response};
+            $response->{content} = get_har_response_content($resource);
+            $response->{bodySize} = $response->{status} == 304 ? 0 : $response->{content}{size};
+        }
+
+        return 0;
+    });
+}
+
+
+sub get_har_response_content {
+    my ($resource) = @_;
+
+    my $mime_type = $resource->get_mime_type;
+    my $is_compressed = 0; # FIXME detect compresion
+    my $content = {
+        mimeType => $mime_type,
+    };
+    if ($is_compressed) {
+        # FIXME implement content for decompression
+    }
+    else {
+        my $data = $resource->get_data;
+        $content->{size} = length($data);
+        $content->{compression} = 0;
+        $content->{text} = $data // '';
+    }
+
+    return $content;
 }
 
 
@@ -291,7 +349,6 @@ sub get_har_response {
     my @cookies;
     my $redirect_url = '';
     my $soup_uri = $message->get_uri;
-    my $mime_type = '';
     $soup_headers->foreach(sub {
         my ($name, $value) = @_;
         push @headers, {
@@ -311,25 +368,9 @@ sub get_har_response {
             # be an absolute URL?
             $redirect_url = $value;
         }
-
-        $mime_type = $value if $name eq 'Content-Type';
     });
     # Last "\r\n" marking the end of headers
     $header_size += 2;
-
-    my $body = $message->get('response-body');
-    my $is_compressed = 0; # FIXME detect compresion
-    my $content = {
-        mimeType => $mime_type,
-    };
-    if ($is_compressed) {
-        # FIXME implement content for decompression
-    }
-    else {
-        $content->{size} = $body->length;
-        $content->{compression} = 0;
-        $content->{text} = $body->data // '';
-    }
 
     return {
         status      => $status,
@@ -337,10 +378,10 @@ sub get_har_response {
         httpVersion => $http_version,
         cookies     => \@cookies,
         headers     => \@headers,
-        content     => $content,
+        content     => undef, # To be filled later
         redirectURL => $redirect_url,
         headersSize => $header_size,
-        bodySize    => $status == 304 ? 0 : $body->length,
+        bodySize    => undef, # To be filled later
     };
 }
 
