@@ -30,6 +30,7 @@ use POSIX qw(strftime);
 use Time::HiRes qw(time);
 use URI;
 use URI::QueryParam;
+use MIME::Base64 qw(encode_base64);
 
 # For debugging
 $Data::Dumper::Pair = ' : ';
@@ -266,7 +267,19 @@ sub get_har_response_content {
         my $data = $resource->get_data;
         $content->{size} = length($data);
         $content->{compression} = 0;
-        $content->{text} = $data // '';
+        # Text can be added as it its to the HAR, binary content has to be in base64
+        if ($mime_type =~ m,^text/|application/x-javascript,) {
+            $content->{text} = $data // '';
+        }
+        elsif (defined $data) {
+            # Binary data to encode in base64
+            $content->{text} = encode_base64($data);
+            $content->{encoding} = 'base64';
+        }
+        else {
+            # No content available (got undef)
+            $content->{text} = '';
+        }
     }
 
     return $content;
