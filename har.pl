@@ -36,9 +36,6 @@ use MIME::Base64 qw(encode_base64);
 $Data::Dumper::Pair = ' : ';
 $Data::Dumper::Sortkeys = 1;
 
-my $REQUESTS_STARTED = 0;
-my $REQUESTS_FINISHED = 0;
-
 sub main {
     my ($url) = @ARGV;
     $url ||= 'http://localhost:3001/';
@@ -68,6 +65,12 @@ sub main {
         ],
         entries => [],
         comment => '',
+
+        # Use by this script
+        _private => {
+            requests_started  => 0,
+            requests_finished => 0,
+        },
     );
 
     # Track all downloads
@@ -85,8 +88,6 @@ sub main {
     $l_button->signal_connect(clicked => sub {
 
         # Start of the tracking
-        $REQUESTS_STARTED = 0;
-        $REQUESTS_FINISHED = 0;
         %har = (
             version => '1.2',
             creator => {
@@ -110,6 +111,10 @@ sub main {
             ],
             entries => [],
             comment => '',
+            _private => {
+                requests_started  => 0,
+                requests_finished => 0,
+            },
         );
 
         $har{pages}[0]{startedDateTime} = get_iso_8601_time(time);
@@ -117,6 +122,7 @@ sub main {
     });
 
     $p_button->signal_connect(clicked => sub {
+        delete $har{_private};
         my $log_har = { log => \%har };
         my $json = to_json(
             $log_har,
@@ -166,7 +172,8 @@ sub tracker_cb {
     my ($session, $message, $socket, $har) = @_;
 
     my $start_time = time;
-    ++$REQUESTS_STARTED;
+    my $private = $har->{_private};
+    ++$private->{requests_started};
 
     my $timings = {
         # FIXME put real values here
@@ -193,7 +200,8 @@ sub tracker_cb {
     my $uri = URI->new($soup_uri->to_string(FALSE));
     $message->signal_connect("finished" => sub {
         my $end_time = time;
-        ++$REQUESTS_FINISHED;
+
+        ++$private->{requests_finished};
         my $elapsed = $end_time - $start_time;
         $har_entry->{time} = int($elapsed * 1000); # As milliseconds
         $timings->{receive} = $har_entry->{time};
@@ -210,6 +218,7 @@ sub tracker_cb {
 sub load_status_cb {
     my ($har) = pop @_;
     my ($view) = @_;
+    my $private = $har->{_private};
 
     my $uri = $view->get_uri or return;
     return unless $view->get_load_status eq 'finished';
@@ -219,7 +228,8 @@ sub load_status_cb {
         my $frame = $view->get_main_frame;
         my $data_source = $frame->get_data_source;
         return 1 if $data_source->is_loading;
-        return 1 unless $REQUESTS_STARTED and $REQUESTS_STARTED == $REQUESTS_FINISHED;
+
+        return 1 unless $private->{requests_started} and $private->{requests_started} ==  $private->{requests_finished};
 
         my @resources = (
             $data_source->get_main_resource,
