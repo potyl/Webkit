@@ -411,7 +411,6 @@ sub get_har_response {
 
 sub get_cookies {
     my ($raw, $uri) = @_;
-    # FIXME can't parse cookies because of a GIR error: expected a blessed reference at /usr/local/lib/perl/5.12.4/Glib/Object/Introspection.pm line 57.
     my $cookie = HTTP::Soup::Cookie::parse($raw, $uri);
 
     my $har_cookie = {
