@@ -233,7 +233,7 @@ sub parse_css_rules {
         elsif ($rule->isa('CSS::DOM::Rule::Media')) {
             printf "Skipping '\@media %s at $base_url\n", $rule->media;
         }
-        elsif ($rule->isa('CSS::DOM::Rule')) {
+        elsif ($rule->isa('CSS::DOM::Rule::Style')) {
             foreach my $selectorText (split /\s*,\s*/, $rule->selectorText) {
                 $selectors->{$selectorText} = {
                     count    => 0,
