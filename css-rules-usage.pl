@@ -13,6 +13,7 @@ dom.pl [OPTION]... [URI]
     -v, --verbose          turn on verbose mode
         --exit             quit with exit instead of stopping the main loop
     -s, --save FILE        save the input file as FILE
+    -m, --media MEDIA      the CSS media type being handled
     -h, --help             print this help message
 
 Simple usage:
@@ -47,11 +48,13 @@ use Time::HiRes qw(time);
 my $TRACE = 0;
 my $DEBUG = 0;
 my $VERBOSE = 0;
+my $MEDIA;
 
 
 sub main {
     GetOptions(
         'save|s=s'  => \my $save,
+        'media|m=s' => \$MEDIA,
         'trace|t'   => \$TRACE,
         'debug|d'   => \$DEBUG,
         'verbose|v' => \$VERBOSE,
@@ -132,6 +135,7 @@ sub report_selectors_usage {
 
     # Get the RAW defition of the CSS (need to parse CSS text in order to extract the rules)
     my $start = time();
+    $DB::single = 1;
     my $selectors = get_css_rules($doc, $resources);
     printf "Found %d selectors in %.2fs\n", scalar(keys %$selectors), time() - $start;
 
@@ -211,7 +215,19 @@ sub get_css_rules {
             ($css_content, $base_url) = get_content($href, $doc_url, $resources) or next;
         }
 
-        parse_css_rules($css_content, $base_url, $resources, \%selectors);
+
+        my $css_dom = CSS::DOM::parse(
+            $css_content,
+            url_fetcher => sub {
+                my ($url) = @_;
+                print "URL: $url\n";
+                my $uri = URI->new_abs($url, $base_url);
+                print "URI: $uri\n";
+                return;# fixme return the content
+            },
+        );
+$DB::single = 1;
+        parse_css_rules($css_dom, \%selectors);
     }
 
     return \%selectors;
@@ -219,37 +235,47 @@ sub get_css_rules {
 
 
 sub parse_css_rules {
-    my ($css_content, $base_url, $resources, $selectors) = @_;
-    my $css = CSS::DOM::parse($css_content);
+    my ($css_dom, $selectors) = @_;
+
     my $rules = 0;
-    foreach my $rule ($css->cssRules) {
+    foreach my $rule ($css_dom->cssRules) {
         ++$rules;
         if ($rule->isa('CSS::DOM::Rule::Import')) {
             my $href = $rule->href;
-            print "\@import $href at $base_url\n" if $VERBOSE;
-            my ($content, $url) = get_content($href, $base_url, $resources) or next;
-            parse_css_rules($content, $url, $resources, $selectors);
+            print "\@import $href\n" if $VERBOSE;
+            my $dom_style_sheet = $rule->styleSheet; # Force scalar context
+            parse_css_rules($dom_style_sheet, $selectors) if is_wanted_media($rule);
         }
         elsif ($rule->isa('CSS::DOM::Rule::Media')) {
-            printf "Skipping '\@media %s at $base_url\n", $rule->media;
+            printf "Handling '\@media %s\n", $rule->media;
+            parse_css_rules($rule, $selectors) if is_wanted_media($rule);
         }
-        elsif ($rule->isa('CSS::DOM::Rule::Style')) {
+        elsif ($rule->isa('CSS::DOM::Rule')) {
             foreach my $selectorText (split /\s*,\s*/, $rule->selectorText) {
                 $selectors->{$selectorText} = {
                     count    => 0,
                     selector => $selectorText,
                     rule     => $rule,
-                    url      => $base_url,
+                    #url      => $base_url,
                 };
             }
         }
         else {
-            #FIXME implement other rules (@media)
             print "Skipping CSS entry $rule\n";
             next;
         }
     }
-    print "Loaded $rules rules from $base_url\n";
+    print "Loaded $rules rules from $css_dom\n";
+}
+
+
+sub is_wanted_media {
+    my ($rule) = @_;
+    my @media = map { lc $_ } $rule->media or return 1;
+    foreach my $media (@media) {
+        return 1 if $media eq $MEDIA;
+    }
+    return;
 }
 
 
