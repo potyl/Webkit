@@ -161,7 +161,7 @@ sub report_selectors_usage {
             $selector->{selector},
             $count,
             $selector->{url},
-            if ($VERBOSE and $count == 0) or $DEBUG;
+            if ($count == 0) or $TRACE;
         ++$unused if $count == 0;
     }
     print "Found $unused unused selectors\n";
