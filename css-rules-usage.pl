@@ -237,14 +237,11 @@ sub get_css_rules {
                 my ($url) = @_;
                 # FIXME which is the base URL? the main document or the URL invoking the CSS rule?
                 my $uri = URI->new_abs($url, $base_url);
-                #print "URI is $uri\n";
-                # FIXME we can't track properly the base url because url_fetcher()
-                #       returns only the content and not the document's URL. We
-                #       might need to store the current URL in global variable...
                 return $resources->{$uri};
             },
         );
-        parse_css_rules($css_dom, $base_url, \%selectors);
+        $css_dom->set_href($base_url);
+        parse_css_rules($css_dom, \%selectors);
     }
 
     return \%selectors;
@@ -252,8 +249,10 @@ sub get_css_rules {
 
 
 sub parse_css_rules {
-    my ($css_dom, $base_url, $selectors) = @_;
+    my ($css_dom, $selectors) = @_;
     confess "undef css dom" unless defined $css_dom;
+
+    my $base_url = $css_dom->href;
 
     my $selectors_count = 0;
     foreach my $rule ($css_dom->cssRules) {
@@ -262,11 +261,14 @@ sub parse_css_rules {
             my $href = $rule->href;
             print "\@import $href\n" if $DEBUG;
             my $dom_style_sheet = $rule->styleSheet; # Force scalar context
-            parse_css_rules($dom_style_sheet, $base_url, $selectors) if is_wanted_media($rule);
+            my $uri = URI->new_abs($rule->href, $base_url);
+            $dom_style_sheet->set_href($uri);
+            parse_css_rules($dom_style_sheet, $selectors) if is_wanted_media($rule);
         }
         elsif ($rule->isa('CSS::DOM::Rule::Media')) {
             printf "\@media %s\n", $rule->media if $DEBUG;
-            parse_css_rules($rule, $base_url, $selectors) if is_wanted_media($rule);
+            $rule->set_href($base_url);
+            parse_css_rules($rule, $selectors) if is_wanted_media($rule);
         }
         elsif ($rule->isa('CSS::DOM::Rule::Style')) {
             foreach my $selectorText (split /\s*,\s*/, $rule->selectorText) {
@@ -275,9 +277,6 @@ sub parse_css_rules {
                     count    => 0,
                     selector => $selectorText,
                     rule     => $rule,
-                    # FIXME $base_url will have a wrong value when url_fetcher()
-                    #       is involved because we can't know which URL was used
-                    #       for fetching the content.
                     url      => $base_url,
                 };
             }
