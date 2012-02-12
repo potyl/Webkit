@@ -260,12 +260,12 @@ sub parse_css_rules {
 
         if ($rule->isa('CSS::DOM::Rule::Import')) {
             my $href = $rule->href;
-            print "################\@import $href\n" if $VERBOSE;
+            print "\@import $href\n" if $DEBUG;
             my $dom_style_sheet = $rule->styleSheet; # Force scalar context
             parse_css_rules($dom_style_sheet, $base_url, $selectors) if is_wanted_media($rule);
         }
         elsif ($rule->isa('CSS::DOM::Rule::Media')) {
-            printf "Handling '\@media %s\n", $rule->media;
+            printf "\@media %s\n", $rule->media if $DEBUG;
             parse_css_rules($rule, $base_url, $selectors) if is_wanted_media($rule);
         }
         elsif ($rule->isa('CSS::DOM::Rule::Style')) {
@@ -287,7 +287,7 @@ sub parse_css_rules {
             next;
         }
     }
-    print "Loaded $selectors_count selectors from $base_url\n";
+    print "Loaded $selectors_count selectors from $base_url\n" if $VERBOSE;
 }
 
 
