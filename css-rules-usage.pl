@@ -43,12 +43,13 @@ use CSS::DOM;
 use URI;
 use POSIX qw(_exit);
 use Time::HiRes qw(time);
+use Carp;
 
 
 my $TRACE = 0;
 my $DEBUG = 0;
 my $VERBOSE = 0;
-my $MEDIA;
+my $MEDIA = 'screen';
 
 
 sub main {
@@ -72,8 +73,11 @@ sub main {
     $session->signal_connect('request-started' => sub {
         my ($session, $message, $socket) = @_;
         ++$requests_started;
+        my $uri = $message->get_uri->to_string(FALSE);
+        print "Download started: $uri\n" if $DEBUG;
         $message->signal_connect("finished" => sub {
             my ($message) = @_;
+            print "Download finished: $uri\n" if $DEBUG;
             ++$requests_finished;
         });
     });
@@ -84,14 +88,17 @@ sub main {
         Glib::Idle->add(sub {
             # Wait until all CSS files are loaded
             return 1 unless $requests_started and $requests_started == $requests_finished;
-            printf "All resources loaded ($requests_started/$requests_finished) in %0.2fs\n", (time() - $start);
+            printf "All resources loaded ($requests_started/$requests_finished) in %0.2fs\n", (time() - $start) if $VERBOSE;
 
             my $list = $view->get_focused_frame->get_data_source->get_subresources;
             my %resources;
             foreach my $resource (@$list) {
                 my $data = $resource->get_data;
-                next unless defined $data;
                 my $uri = $resource->get_uri or next;
+                if (! defined $data) {
+                    print "Missing resource for $uri\n" if $VERBOSE;
+                    next;
+                }
                 $resources{$uri} = $data;
             }
 
@@ -104,7 +111,7 @@ sub main {
 
             my $now = time();
             report_selectors_usage($view->get_dom_document, \%resources);
-            printf "Document processed in %0.2fs\n", (time() - $now);
+            printf "Document processed in %0.2fs\n", (time() - $now) if $VERBOSE;
             if ($do_exit) {
                 # Prevents the seg fault at the cleanup in an unstable WebKit version
                 _exit(0);
@@ -135,7 +142,6 @@ sub report_selectors_usage {
 
     # Get the RAW defition of the CSS (need to parse CSS text in order to extract the rules)
     my $start = time();
-    $DB::single = 1;
     my $selectors = get_css_rules($doc, $resources);
     printf "Found %d selectors in %.2fs\n", scalar(keys %$selectors), time() - $start;
 
@@ -189,7 +195,8 @@ sub get_css_rules {
 
     my %selectors;
 
-    # Get the RAW defition of the CSS (need to parse CSS text in order to extract the rules)
+    # Get the RAW defition of the top CSS resources. These are the entry point
+    # for all CSS. Each one these CSS resources could load other resources.
     my $resolver = $doc->create_ns_resolver($doc);
     my $xpath_results = $doc->evaluate(
         '//style | //link[@rel = "stylesheet" and @type="text/css" and @href]',
@@ -200,6 +207,7 @@ sub get_css_rules {
     );
     my $length = $xpath_results->get_snapshot_length;
     my $doc_url = $doc->get_document_uri;
+    my %top_css_resources;
     for (my $i = 0; $i < $length; ++$i) {
         my $element = $xpath_results->snapshot_item($i);
 
@@ -214,20 +222,29 @@ sub get_css_rules {
             my $href = $element->get_attribute('href');
             ($css_content, $base_url) = get_content($href, $doc_url, $resources) or next;
         }
+        $top_css_resources{$base_url} = $css_content;
+    }
 
+
+    # Parse each top CSS resource. This will give us all CSS selectors. This is
+    # a recursive process since a CSS file can include another CSS file.
+    foreach my $base_url (keys %top_css_resources) {
+        my $css_content = $top_css_resources{$base_url} or die "Can't get content for $base_url";
 
         my $css_dom = CSS::DOM::parse(
             $css_content,
             url_fetcher => sub {
                 my ($url) = @_;
-                print "URL: $url\n";
+                # FIXME which is the base URL? the main document or the URL invoking the CSS rule?
                 my $uri = URI->new_abs($url, $base_url);
-                print "URI: $uri\n";
-                return;# fixme return the content
+                #print "URI is $uri\n";
+                # FIXME we can't track properly the base url because url_fetcher()
+                #       returns only the content and not the document's URL. We
+                #       might need to store the current URL in global variable...
+                return $resources->{$uri};
             },
         );
-$DB::single = 1;
-        parse_css_rules($css_dom, \%selectors);
+        parse_css_rules($css_dom, $base_url, \%selectors);
     }
 
     return \%selectors;
@@ -235,28 +252,33 @@ $DB::single = 1;
 
 
 sub parse_css_rules {
-    my ($css_dom, $selectors) = @_;
+    my ($css_dom, $base_url, $selectors) = @_;
+    confess "undef css dom" unless defined $css_dom;
 
-    my $rules = 0;
+    my $selectors_count = 0;
     foreach my $rule ($css_dom->cssRules) {
-        ++$rules;
+
         if ($rule->isa('CSS::DOM::Rule::Import')) {
             my $href = $rule->href;
-            print "\@import $href\n" if $VERBOSE;
+            print "################\@import $href\n" if $VERBOSE;
             my $dom_style_sheet = $rule->styleSheet; # Force scalar context
-            parse_css_rules($dom_style_sheet, $selectors) if is_wanted_media($rule);
+            parse_css_rules($dom_style_sheet, $base_url, $selectors) if is_wanted_media($rule);
         }
         elsif ($rule->isa('CSS::DOM::Rule::Media')) {
             printf "Handling '\@media %s\n", $rule->media;
-            parse_css_rules($rule, $selectors) if is_wanted_media($rule);
+            parse_css_rules($rule, $base_url, $selectors) if is_wanted_media($rule);
         }
-        elsif ($rule->isa('CSS::DOM::Rule')) {
+        elsif ($rule->isa('CSS::DOM::Rule::Style')) {
             foreach my $selectorText (split /\s*,\s*/, $rule->selectorText) {
+                ++$selectors_count;
                 $selectors->{$selectorText} = {
                     count    => 0,
                     selector => $selectorText,
                     rule     => $rule,
-                    #url      => $base_url,
+                    # FIXME $base_url will have a wrong value when url_fetcher()
+                    #       is involved because we can't know which URL was used
+                    #       for fetching the content.
+                    url      => $base_url,
                 };
             }
         }
@@ -265,7 +287,7 @@ sub parse_css_rules {
             next;
         }
     }
-    print "Loaded $rules rules from $css_dom\n";
+    print "Loaded $selectors_count selectors from $base_url\n";
 }
 
 
@@ -282,11 +304,7 @@ sub is_wanted_media {
 sub get_content {
     my ($url, $base_url, $resources) = @_;
     my $full_url = URI->new_abs($url, $base_url)->as_string;
-    my $content = $resources->{$full_url};
-    if (!$content) {
-        print "*** Missing content for $full_url\n";
-        print "Available content: ", Dumper([ keys %$resources ]);
-    }
+    my $content = $resources->{$full_url} or return;
     return ($content, $full_url);
 }
 
