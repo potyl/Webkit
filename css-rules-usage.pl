@@ -252,7 +252,8 @@ sub parse_css_rules {
     my ($css_dom, $selectors) = @_;
     confess "undef css dom" unless defined $css_dom;
 
-    my $base_url = $css_dom->href;
+    # Media has no href, so we need to take the href of the parentStyleSheet
+    my $base_url = $css_dom->can('href') ? $css_dom->href : $css_dom->parentStyleSheet->href;
 
     my $selectors_count = 0;
     foreach my $rule ($css_dom->cssRules) {
@@ -267,7 +268,6 @@ sub parse_css_rules {
         }
         elsif ($rule->isa('CSS::DOM::Rule::Media')) {
             printf "\@media %s\n", $rule->media if $DEBUG;
-            $rule->set_href($base_url);
             parse_css_rules($rule, $selectors) if is_wanted_media($rule);
         }
         elsif ($rule->isa('CSS::DOM::Rule::Style')) {
