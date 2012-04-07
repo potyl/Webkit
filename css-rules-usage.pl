@@ -6,7 +6,7 @@ css-rules-usage.pl - Reports the usage of CSS rules
 
 =head1 SYNOPSIS
 
-dom.pl [OPTION]... [URI]
+css-rules-usage.pl [OPTION]... [URI]
 
     -t, --trace            turn on trace mode
     -d, --debug            turn on debug mode
