@@ -20,12 +20,19 @@ int main(int argc, char* argv[]) {
     // Create a Window, set colormap to RGBA
     GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     GdkScreen *screen = gtk_widget_get_screen(window);
-    GdkColormap *rgba = gdk_screen_get_rgba_colormap (screen);
 
+#if GTK_CHECK_VERSION(3, 0, 0)
+    GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
+    if (visual && gdk_screen_is_composited (screen)) {
+        gtk_widget_set_visual(GTK_WIDGET(window), visual);
+    }
+#else
+    GdkColormap *rgba = gdk_screen_get_rgba_colormap (screen);s
     if (rgba && gdk_screen_is_composited (screen)) {
         gtk_widget_set_default_colormap(rgba);
-        gtk_widget_set_colormap(GTK_WIDGET(window), rgba);
+        gtk_widget_set_default_colormap(rgba);
     }
+#endif
 
     gtk_window_set_default_size(GTK_WINDOW(window), 600, 400);
     g_signal_connect(window, "destroy", G_CALLBACK(destroy_cb), NULL);
