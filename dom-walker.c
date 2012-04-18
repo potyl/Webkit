@@ -72,12 +72,12 @@ load_status_cb (GObject* object, GParamSpec* pspec, gpointer data) {
     /* We now know that the document has been loaded */
     g_main_loop_quit(ctx->loop);
     now = g_get_monotonic_time();
-    printf("Document loaded in %lldms\n", TO_MS(now - (ctx->start_time)));
+    printf("Document loaded in %" G_GINT64_FORMAT "ms\n", TO_MS(now - (ctx->start_time)));
 
     document = webkit_web_view_get_dom_document(web_view);
     count = walk_dom(WEBKIT_DOM_NODE(document));
     elapsed = g_get_monotonic_time() - now;
-    printf("Document has %ld nodes and took %lldms to walk\n", count, TO_MS(elapsed));
+    printf("Document has %ld nodes and took % " G_GINT64_FORMAT "ms to walk\n", count, TO_MS(elapsed));
 }
 
 
