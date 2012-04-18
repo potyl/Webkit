@@ -11,23 +11,23 @@ run: transparent
 
 
 transparent: transparent.c
-	$(CC) $(CFLAGS) $(WEBKIT) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $< $(WEBKIT)
 
 
 download-cb: download-cb.c
-	$(CC) $(CFLAGS) $(WEBKIT) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $< $(WEBKIT)
 
 
 dom-walker: dom-walker.c
-	$(CC) $(CFLAGS) $(WEBKIT) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $< $(WEBKIT)
 
 
 js: js.c
-	$(CC) $(CFLAGS) $(WEBKIT) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $< $(WEBKIT)
 
 
 screenshot: screenshot.c
-	$(CC) $(CFLAGS) `pkg-config --cflags --libs webkitgtk-3.0 cairo-pdf` -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $< `pkg-config --cflags --libs webkitgtk-3.0 cairo-pdf`
 
 
 .PHONY: clean
