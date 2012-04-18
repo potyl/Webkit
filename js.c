@@ -40,7 +40,7 @@ static void
 execute_js (WebKitWebView *web_view) {
     WebKitWebFrame *frame;
     JSGlobalContextRef context;
-    JSStringRef js_script, js_value;
+    JSStringRef js_script, js_value, js_source;
     JSValueRef value;
     gint size;
     gchar* str_value;
@@ -48,9 +48,11 @@ execute_js (WebKitWebView *web_view) {
     frame = webkit_web_view_get_main_frame(web_view);
     context = webkit_web_frame_get_global_context(frame);
 
+    js_source = JSStringCreateWithUTF8CString(__FILE__);
     js_script = JSStringCreateWithUTF8CString("window.document.getElementsByTagName('title')[0].innerText;");
-    value = JSEvaluateScript(context, js_script, NULL, NULL, NULL, NULL);
+    value = JSEvaluateScript(context, js_script, NULL, js_source, __LINE__ - 1, NULL);
     JSStringRelease(js_script);
+    JSStringRelease(js_source);
 
     if (! JSValueIsString(context, value)) {
         printf("Value is not a string\n");
