@@ -69,6 +69,12 @@ main (int argc, gchar* argv[]) {
 
     if (!g_thread_supported()) {g_thread_init(NULL);}
 
+    g_printf("Running against webkit %d.%d.%d\n",
+        webkit_major_version(),
+        webkit_minor_version(),
+        webkit_micro_version()
+    );
+
     WebKitWebView *web_view = WEBKIT_WEB_VIEW(webkit_web_view_new());
 
     g_signal_connect(web_view, "notify::load-status", G_CALLBACK(load_status_cb), (gpointer) filename);
