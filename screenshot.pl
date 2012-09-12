@@ -16,6 +16,7 @@ screenshot.pl [OPTION]... URI
     -s, --size SIZE          the window's size (ex: 1024x800)
     -u, --user USER          the user name to use
     -p, --password PASSWORD  the password to use
+        --proxy PROXY        the proxy to use
         --transparent        if true then the window will be transparent
     -h, --help               print this help message
 
@@ -69,6 +70,7 @@ sub main {
         'p|password=s' => \my $password,
         't|type=s'     => \my $type,
         'transparent'  => \my $transparent,
+        'proxy=s'      => \my $proxy,
     ) or pod2usage(1);
     my ($url) = @ARGV or pod2usage(1);
 
@@ -111,6 +113,18 @@ sub main {
         });
     }
 
+
+    if (defined $proxy) {
+        require HTTP::Soup;
+
+        $proxy = "http://$proxy" unless $proxy =~ m,^https?://',;
+
+        my $proxy_uri = HTTP::Soup::URI->new($proxy);
+        my $session = Gtk3::WebKit->get_default_session();
+        $session->set(
+            'proxy-uri' => $proxy_uri,
+        );
+    }
 
     my $save_as_func = $TYPES{$type};
 
