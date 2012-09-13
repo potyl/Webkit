@@ -117,8 +117,7 @@ sub main {
     if (defined $proxy) {
         require HTTP::Soup;
 
-        $proxy = "http://$proxy" unless $proxy =~ m,^https?://',;
-
+        $proxy = "http://$proxy" unless $proxy =~ m,^https?://,;
         my $proxy_uri = HTTP::Soup::URI->new($proxy);
         my $session = Gtk3::WebKit->get_default_session();
         $session->set(
