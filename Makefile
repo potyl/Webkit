@@ -27,7 +27,7 @@ js: js.c
 
 
 screenshot: screenshot.c
-	$(CC) $(CFLAGS) -o $@ $< `pkg-config --cflags --libs webkitgtk-3.0 cairo-pdf`
+	$(CC) $(CFLAGS) -o $@ $< `pkg-config --cflags --libs webkitgtk-3.0 cairo-pdf libsoup-2.4`
 
 
 .PHONY: clean

@@ -3,6 +3,7 @@
 #include <libsoup/soup.h>
 #include <cairo-pdf.h>
 #include <glib/gprintf.h>
+#include <stdlib.h>
 
 
 typedef struct IdleData_ {
@@ -74,6 +75,20 @@ main (int argc, gchar* argv[]) {
         webkit_minor_version(),
         webkit_micro_version()
     );
+
+
+    gchar *proxy = getenv("http_proxy");
+    if (proxy == NULL) getenv("HTTP_PROXY");
+    if (proxy != NULL) {
+        SoupSession *session = webkit_get_default_session();
+        SoupURI *proxy_uri = soup_uri_new(proxy);
+        g_printf("Using proxy: %s", proxy);
+        g_object_set(
+            session,
+            SOUP_SESSION_PROXY_URI, proxy_uri,
+            NULL
+        );
+    }
 
     WebKitWebView *web_view = WEBKIT_WEB_VIEW(webkit_web_view_new());
 
