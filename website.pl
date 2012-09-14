@@ -98,7 +98,7 @@ get '/' => sub {
                 <tr>
                     <th>Type:</th>
                     <td>
-                        <input type="radio" name="type" id="png" value="png"/> <label for="png">PNG</label> &nbsp; &nbsp;
+                        <input type="radio" name="type" id="png" value="png" checked/> <label for="png">PNG</label> &nbsp; &nbsp;
                         <input type="radio" name="type" id="pdf" value="pdf"/> <label for="pdf">PDF</label>
                     </td>
                 </tr>
@@ -134,9 +134,13 @@ get '/' => sub {
 get '/add' => sub {
     my $url = param('url') or return do_error("Missing parameter 'url'");
     my $size = param('size') // '';
-    my $type = param('type') // '';
+    my $type = param('type') // 'png';
     my $proxy = param('proxy') // '';
     my $xpath = param('xpath') // '';
+
+    foreach my $val ($url, $size, $type, $proxy, $xpath) {
+        $val = trim($val);
+    }
 
     $dbh->begin_work();
 
@@ -190,11 +194,11 @@ get '/view' => sub {
     my $select = $dbh->prepare("SELECT type FROM queue WHERE id = ? LIMIT 1");
     $select->execute($id);
     while (my $row = $select->fetchrow_hashref) {
-        my $type = $row->{type};
+        my $type = $row->{type} || 'png';
         my $file = "captures/$id.$type";
         my $mime_type = $MIME_TYPES{$type};
         debug "Showing $file ($mime_type)";
-        return do_error "Can't find the file $file" unless -e $file;
+        return do_error("Can't find the file $file") unless -e $file;
         return send_file $file, content_type => $mime_type, system_path => 1;
     }
 
@@ -213,5 +217,14 @@ sub do_error {
         </html>
     };
 }
+
+
+sub trim {
+    my ($string) = @_;
+    $string =~ s/^\s+//;
+    $string =~ s/\s+$//;
+    return $string;
+}
+
 
 dance();
