@@ -13,16 +13,15 @@ set logger => 'console';
 
 my $dbh = DBI->connect('dbi:SQLite:dbname=queue.db', '', '');
 $dbh->do(qq{
-CREATE TABLE IF NOT EXISTS queue (
-    id     INTEGER PRIMARY KEY AUTOINCREMENT,
-    url    TEXT NOT NULL,
-    size   TEXT NOT NULL DEFAULT '1280x800',
-    type   TEXT NOT NULL DEFAULT 'png',
-    proxy  TEXT NOT NULL DEFAULT '',
-    xpath  TEXT NOT NULL DEFAULT '',
-    status TEXT NOT NULL DEFAULT 'pending'
-);
-
+    CREATE TABLE IF NOT EXISTS queue (
+        id     INTEGER PRIMARY KEY AUTOINCREMENT,
+        url    TEXT NOT NULL,
+        size   TEXT NOT NULL DEFAULT '1280x800',
+        type   TEXT NOT NULL DEFAULT 'png',
+        proxy  TEXT NOT NULL DEFAULT '',
+        xpath  TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'pending'
+    );
 });
 
 get '/' => sub {
