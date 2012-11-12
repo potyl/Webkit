@@ -25,13 +25,39 @@ use Gtk3::WebKit;
 use HTTP::Soup;
 use Data::Dumper;
 use Time::HiRes qw(time);
+use Getopt::Long qw(:config auto_help);
+use Pod::Usage;
 
 my $TOTAL = 0;
 my $START;
+my $VERBOSE = 0;
 
 sub main {
-    my ($url) = @ARGV;
-    $url ||= 'http://localhost:3001/';
+    GetOptions(
+        'u|user=s'     => \my $user,
+        'p|password=s' => \my $password,
+        'v|verbose'    => \$VERBOSE,
+    ) or pod2usage(1);
+    my @urls = @ARGV or pod2usage(1);
+
+    if (defined $user and defined $password) {
+        require HTTP::Soup;
+
+        # Remove the default authentication dialog so that we can provide our
+        # own authentication method.
+        my $session = Gtk3::WebKit->get_default_session();
+        $session->remove_feature_by_type('Gtk3::WebKit::SoupAuthDialog');
+
+        my $count = 0;
+        $session->signal_connect('authenticate' => sub {
+            my ($session, $message, $auth) = @_;
+            if ($count++) {
+                print "Too many authentication failures\n";
+                Gtk3->main_quit();
+            }
+            $auth->authenticate($user, $password);
+        });
+    }
 
     my $loop = Glib::MainLoop->new();
 
@@ -46,8 +72,11 @@ sub main {
     $view->signal_connect('notify::load-status' => \&load_status_cb, [ $loop, \%resources ]);
 
     $START = time;
-    $view->load_uri($url);
-    $loop->run();
+    foreach my $url (@urls) {
+        $view->load_uri($url);
+
+        $loop->run();
+    }
 
     return 0;
 }
@@ -72,7 +101,7 @@ sub tracker_cb {
         my $headers = $message->get('response-headers');
         $headers->foreach(sub {
             my ($name, $value) = @_;
-            print "Header: $name => $value\n";
+            print "Header: $name => $value\n" if $VERBOSE;
         });
     });
 
@@ -112,7 +141,8 @@ sub load_status_cb {
         $bytes += $size;
         my $mime = $resource->get_mime_type // 'No mime-type';
         my $status_code = $data->{status_code} // 'undef';
-        printf "%s %d bytes; %s (%s) in %s sec\n", $uri, $size, $mime, $status_code, $time;
+        printf "%s %d bytes; %s (%s) in %s sec\n", $uri, $size, $mime, $status_code, $time
+            if $VERBOSE;
     }
 
     printf "Downlodaded $TOTAL resources with $bytes bytes in %.2f seconds\n", $end - $START;
