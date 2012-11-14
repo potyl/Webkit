@@ -64,8 +64,6 @@ sub main {
         });
     }
 
-    my $loop = Glib::MainLoop->new();
-
     # Track all downloads
     my $session = Gtk3::WebKit->get_default_session();
     my %resources;
@@ -74,24 +72,24 @@ sub main {
     my $view = Gtk3::WebKit::WebView->new();
 
     # Track once all downloads are finished
-    $view->signal_connect('notify::load-status' => \&load_status_cb, [ $loop, \%resources ]);
+    $view->signal_connect('notify::load-status' => \&load_status_cb, \%resources);
 
     do {
-        fetch_urls($view, $loop, @urls)
+        fetch_urls($view, @urls)
     } while $repeat;
 
     return 0;
 }
 
 sub fetch_urls {
-    my ($view,$loop,@urls) = @_;
+    my ($view, @urls) = @_;
 
     $START = time;
     $TOTAL = 0;
     foreach my $url (@urls) {
         $view->load_uri($url);
 
-        $loop->run();
+        Gtk3->main();
     }
 }
 
@@ -125,7 +123,7 @@ sub tracker_cb {
 
 # Called when webkit updates it's 'load-status'.
 sub load_status_cb {
-    my ($loop, $resources) = @{ pop @_ };
+    my ($resources) = pop @_;
     my ($view) = @_;
 
     my $uri = $view->get_uri or return;
@@ -163,11 +161,11 @@ sub load_status_cb {
 
     if ($PAUSE) {
         Glib::Timeout->add($PAUSE, sub {
-            $loop->quit();
+            Gtk3->main_quit();
         });
     }
     else {
-        $loop->quit();
+        Gtk3->main_quit();
     }
 }
 
