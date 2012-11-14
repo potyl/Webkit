@@ -3,11 +3,17 @@ WEBKIT=$(shell pkg-config --cflags --libs webkitgtk-3.0)
 CFLAGS=-std=c99
 
 .PHONY: all
-all: transparent download-cb screenshot dom-walker js
+all: transparent download-cb screenshot dom-walker js proxy
+
 
 .PHONY: run
 run: transparent
 	./$< file://$(PWD)/sample.html
+
+
+proxy: proxy.c
+	$(CC) $(CFLAGS) -o $@ $< $(WEBKIT) `pkg-config --cflags --libs libsoup-gnome-2.4`
+
 
 
 transparent: transparent.c
