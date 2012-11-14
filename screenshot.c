@@ -78,7 +78,7 @@ main (int argc, gchar* argv[]) {
 
 
     gchar *proxy = getenv("http_proxy");
-    if (proxy == NULL) getenv("HTTP_PROXY");
+    if (proxy == NULL) proxy = getenv("HTTP_PROXY");
     if (proxy != NULL) {
         SoupSession *session = webkit_get_default_session();
         SoupURI *proxy_uri = soup_uri_new(proxy);
