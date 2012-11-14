@@ -39,8 +39,11 @@ sub main {
         'u|user=s'     => \my $user,
         'p|password=s' => \my $password,
         'v|verbose'    => \$VERBOSE,
+        'r|repeat'     => \my $repeat,
+        's|stdin'      => \my $urls_from_stdin,
     ) or pod2usage(1);
-    my @urls = @ARGV or pod2usage(1);
+
+    my @urls = ($urls_from_stdin ? (<STDIN>) : (@ARGV)) or pod2usage(1);
 
     if (defined $user and defined $password) {
         require HTTP::Soup;
@@ -73,14 +76,23 @@ sub main {
     # Track once all downloads are finished
     $view->signal_connect('notify::load-status' => \&load_status_cb, [ $loop, \%resources ]);
 
+    do {
+        fetch_urls($view, $loop, @urls)
+    } while $repeat;
+
+    return 0;
+}
+
+sub fetch_urls {
+    my ($view,$loop,@urls) = @_;
+
     $START = time;
+    $TOTAL = 0;
     foreach my $url (@urls) {
         $view->load_uri($url);
 
         $loop->run();
     }
-
-    return 0;
 }
 
 
